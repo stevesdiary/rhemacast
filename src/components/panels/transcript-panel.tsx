@@ -18,7 +18,8 @@ import { bibleActions } from "@/hooks/use-bible"
 import { presentVerse } from "@/hooks/use-broadcast"
 import { mark, observeLongTasks } from "@/lib/latency-marks"
 import { pickAutoPresentTarget } from "@/lib/auto-present-target"
-import type { DetectionResult, ReadingAdvance } from "@/types"
+import type { DetectionResult, ReadingAdvance, VerseQueueItem } from "@/types"
+import { isVerseQueueItem } from "@/types"
 
 /**
  * Leaf component that subscribes to the audio level only. Isolated so the
@@ -150,16 +151,17 @@ export function TranscriptPanel() {
         // previous chapter-only → refinement cycle.
         const dupIdx = d.is_chapter_only
           ? queue.items.findIndex(
-              (i) =>
+              (i): i is VerseQueueItem =>
+                isVerseQueueItem(i) &&
                 i.verse.book_number === d.book_number &&
-                i.verse.chapter === d.chapter,
+                i.verse.chapter === d.chapter
             )
           : queue.findDuplicate(d.book_number, d.chapter, d.verse)
         if (dupIdx !== -1) {
           const existing = queue.items[dupIdx]
           // Backfill text if the existing item was queued without it
           // (e.g. an earlier detection emitted with empty verse text).
-          if (!existing.verse.text && d.verse_text) {
+          if (isVerseQueueItem(existing) && !existing.verse.text && d.verse_text) {
             queue.backfillText(existing.id, d.verse_text)
           }
           queue.flashItem(existing.id)
@@ -168,6 +170,7 @@ export function TranscriptPanel() {
         }
         queue.addItem({
           id: crypto.randomUUID(),
+          type: "verse",
           verse: {
             id: 0,
             translation_id: useBibleStore.getState().activeTranslationId,
