@@ -32,7 +32,7 @@ import {
 import { useBible, bibleActions, findLoadedVerse } from "@/hooks/use-bible"
 import { presentVerse } from "@/hooks/use-broadcast"
 import { useBibleStore, useQueueStore } from "@/stores"
-import type { Book, Verse, SemanticSearchResult, VerseQueueItem } from "@/types"
+import type { Book, Verse, SemanticSearchResult } from "@/types"
 import { isVerseQueueItem } from "@/types"
 import { Input } from "@/components/ui/input"
 import { searchContextWithFuse } from "@/lib/context-search"

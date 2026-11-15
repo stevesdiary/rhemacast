@@ -42,13 +42,3 @@ export interface SearchSongRow {
   rank: number
   phrase_match: boolean
 }
-
-/** Song queue item for the presentation queue */
-export interface SongQueueItem {
-  id: string
-  song: Song
-  section: SongSection | null // null = full song, specific section if set
-  reference: string // e.g., "Amazing Grace - Verse 1"
-  added_at: number
-  source: "manual" | "search"
-}

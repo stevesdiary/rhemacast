@@ -60,12 +60,13 @@ export async function getSong(songId: number): Promise<SongWithSections | null> 
 
 /** Queue a song (or specific section) for presentation */
 export function queueSong(
-  song: Song,
+  song: SongWithSections,
   section: SongSection | null,
   reference: string
 ): SongQueueItem {
   const item: SongQueueItem = {
     id: crypto.randomUUID(),
+    type: "song",
     song,
     section,
     reference,
