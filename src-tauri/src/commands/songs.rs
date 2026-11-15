@@ -1,11 +1,10 @@
 #![expect(clippy::needless_pass_by_value, reason = "Tauri command extractors require pass-by-value")]
 
 use std::sync::Mutex;
-use serde::Serialize;
 use tauri::State;
 
 use crate::state::AppState;
-use rhema_songs::{SearchSongRow, Song, SongSection, SongWithSections};
+use rhema_songs::{SearchSongRow, Song, SongWithSections};
 
 #[tauri::command]
 pub fn list_songs(
@@ -43,9 +42,7 @@ pub fn search_songs(
         .songs_db
         .as_ref()
         .ok_or_else(|| "Songs database not loaded".to_string())?;
-    
-    let conn = db.conn.lock().unwrap();
-    rhema_songs::search::search_songs(&conn, &query, limit).map_err(|e| e.to_string())
+    db.search_songs(&query, limit).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

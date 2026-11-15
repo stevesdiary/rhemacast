@@ -5,7 +5,7 @@ use rusqlite::{Connection, OpenFlags, OptionalExtension};
 use serde_json;
 
 use crate::error::{Result, SongsError};
-use crate::models::{Song, SongSection, SongWithSections};
+use crate::models::{SearchSongRow, Song, SongSection, SongWithSections};
 
 pub struct SongsDb {
     pub(crate) conn: Mutex<Connection>,
@@ -213,5 +213,10 @@ impl SongsDb {
             })
         })?;
         Ok(songs.map(|r| r.map_err(SongsError::Database)).collect::<Result<Vec<Song>>>()?)
+    }
+
+    pub fn search_songs(&self, query: &str, limit: usize) -> Result<Vec<SearchSongRow>> {
+        let conn = self.conn.lock().unwrap();
+        crate::search::search_songs(&conn, query, limit)
     }
 }
