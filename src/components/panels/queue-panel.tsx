@@ -10,7 +10,7 @@ import {
 import { useQueueStore } from "@/stores"
 import { presentVerse } from "@/hooks/use-broadcast"
 import { bibleActions } from "@/hooks/use-bible"
-import type { QueueItem, VerseQueueItem, SongQueueItem } from "@/types"
+import type { QueueItem } from "@/types"
 import { useSongsStore } from "@/stores/songs-store"
 import { isVerseQueueItem, isSongQueueItem } from "@/types"
 
@@ -63,7 +63,7 @@ function QueueItemRow({
       </Badge>
     )
 
-  const title = isVerseQueueItem(item) ? item.reference : `${item.song.title}${item.section ? ` - ${item.section.section_type} ${item.section.section_number}` : ""}`
+  const title = isVerseQueueItem(item) ? item.reference : `${item.song.song.title}${item.section ? ` - ${item.section.section_type} ${item.section.section_number}` : ""}`
 
   return (
     <div

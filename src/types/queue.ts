@@ -1,5 +1,5 @@
 import type { Verse } from "./bible"
-import type { Song, SongSection } from "./songs"
+import type { SongSection, SongWithSections } from "./songs"
 
 export type QueueItemType = "verse" | "song"
 
@@ -18,7 +18,7 @@ export interface VerseQueueItem {
 export interface SongQueueItem {
   id: string
   type: "song"
-  song: Song
+  song: SongWithSections
   section: SongSection | null // null = full song
   reference: string // e.g., "Amazing Grace - Verse 1"
   added_at: number

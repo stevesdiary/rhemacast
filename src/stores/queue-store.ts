@@ -1,6 +1,6 @@
 import { create } from "zustand"
-import type { QueueItem, VerseQueueItem, SongQueueItem } from "@/types"
-import { isVerseQueueItem, isSongQueueItem } from "@/types"
+import type { QueueItem, VerseQueueItem } from "@/types"
+import { isVerseQueueItem } from "@/types"
 
 interface QueueState {
   items: QueueItem[]
@@ -42,9 +42,9 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     set((state) => {
       if (isVerseQueueItem(item)) {
         const key = verseKey(item)
-        const idx = state.items.findIndex((i) => isVerseQueueItem(i) && verseKey(i) === key)
+        const idx = state.items.findIndex((i): i is VerseQueueItem => isVerseQueueItem(i) && verseKey(i) === key)
         if (idx !== -1) {
-          const existing = state.items[idx]
+          const existing = state.items[idx] as VerseQueueItem
           if (!existing.verse.text && item.verse.text) {
             const items = [...state.items]
             items[idx] = { ...existing, verse: { ...existing.verse, text: item.verse.text } }
@@ -75,42 +75,45 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   },
   findDuplicate: (bookNumber, chapter, verse) =>
     get().items.findIndex(
-      (i) => isVerseQueueItem(i) && verseKeyFromValues(bookNumber, chapter, verse) === verseKey(i)
+      (i): i is VerseQueueItem => isVerseQueueItem(i) && verseKeyFromValues(bookNumber, chapter, verse) === verseKey(i)
     ),
   backfillText: (id, text) =>
     set((state) => {
       const idx = state.items.findIndex((i) => i.id === id)
-      if (idx === -1 || !isVerseQueueItem(state.items[idx]) || state.items[idx].verse.text || !text) return state
+      if (idx === -1) return state
+      const item = state.items[idx]
+      if (!isVerseQueueItem(item) || item.verse.text || !text) return state
       const items = [...state.items]
-      items[idx] = { ...items[idx], verse: { ...items[idx].verse, text } }
+      items[idx] = { ...item, verse: { ...item.verse, text } }
       return { items }
     }),
   updateEarlyRef: (bookNumber, chapter, verse, reference, verseText) => {
     let found = false
     set((state) => {
       let idx = state.items.findIndex(
-        (i) =>
+        (i): i is VerseQueueItem =>
           isVerseQueueItem(i) &&
-          i.is_chapter_only &&
+          !!i.is_chapter_only &&
           i.verse.book_number === bookNumber &&
           i.verse.chapter === chapter,
       )
       if (idx === -1) {
         idx = state.items.findIndex(
-          (i) =>
+          (i): i is VerseQueueItem =>
             isVerseQueueItem(i) &&
-            i.is_chapter_only &&
+            !!i.is_chapter_only &&
             i.verse.book_number === bookNumber,
         )
       }
       if (idx === -1) return state
       found = true
       const items = [...state.items]
-      const item = { ...items[idx] }
-      item.verse = { ...item.verse, verse, text: verseText }
-      item.reference = reference
-      item.is_chapter_only = false
-      items[idx] = item
+      const item = items[idx] as VerseQueueItem
+      const updatedItem = { ...item }
+      updatedItem.verse = { ...updatedItem.verse, verse, text: verseText }
+      updatedItem.reference = reference
+      updatedItem.is_chapter_only = false
+      items[idx] = updatedItem
       return { items }
     })
     return found
