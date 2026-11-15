@@ -4,6 +4,7 @@ import { PreviewPanel } from "@/components/panels/preview-panel"
 import { LiveOutputPanel } from "@/components/panels/live-output-panel"
 import { QueuePanel } from "@/components/panels/queue-panel"
 import { SearchPanel } from "@/components/panels/search-panel"
+import { SongsSearchPanel } from "@/components/panels/songs-search-panel"
 import { DetectionsPanel } from "@/components/panels/detections-panel"
 import { EmbeddingWarningBanner } from "@/components/ui/embedding-warning-banner"
 
@@ -47,10 +48,10 @@ export function Dashboard() {
         <LiveOutputPanel />
         <QueuePanel />
       </div>
-      {/* Row 3: Search + Detections, split 50/50 so the two-column
-          detections panel has room to breathe */}
-      <div className="col-span-4 grid min-h-0 grid-cols-2 gap-3 px-3 pb-3">
+      {/* Row 3: Bible search | Songs search | Detections */}
+      <div className="col-span-4 grid min-h-0 grid-cols-3 gap-3 px-3 pb-3">
         <SearchPanel />
+        <SongsSearchPanel />
         <DetectionsPanel />
       </div>
     </div>
