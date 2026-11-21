@@ -8,12 +8,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import {
-  MusicIcon,
-  BookOpenIcon,
-  CheckCircleIcon,
-  SparklesIcon,
-} from "lucide-react"
+import { MusicIcon, SparklesIcon } from "lucide-react"
 import { toast } from "sonner"
 import { createSong } from "@/stores/songs-store"
 import { useQueueStore } from "@/stores"

@@ -1,10 +1,5 @@
 import { create } from "zustand"
-import type {
-  QueueItem,
-  VerseQueueItem,
-  SongQueueItem,
-  SongWithSections,
-} from "@/types"
+import type { QueueItem, VerseQueueItem, SongWithSections } from "@/types"
 import { isVerseQueueItem, isSongQueueItem } from "@/types"
 
 interface QueueState {

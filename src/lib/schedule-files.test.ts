@@ -78,11 +78,19 @@ describe("schedule-files", () => {
         id: 1,
         title: "Amazing Grace",
         author: "John Newton",
+        composer: null,
+        copyright: null,
+        ccli_number: null,
+        themes: [],
       },
       {
         id: 2,
         title: "Way Maker",
         author: "Sinach",
+        composer: null,
+        copyright: null,
+        ccli_number: null,
+        themes: [],
       },
     ]
 
@@ -105,7 +113,7 @@ describe("schedule-files", () => {
         reference: "Genesis 1:1",
         text: "In the beginning...",
         version: "KJV",
-      }) as QueueItem
+      }) as unknown as QueueItem
 
     it("identifies songs in schedule that are not in local library", () => {
       const items: QueueItem[] = [

@@ -88,19 +88,24 @@ function SongSectionRow({
   fullSong: SongWithSections
   onQueue: (section: SongSection) => void
 }) {
+  const label = sectionLabel(
+    section.section_type as string,
+    section.section_number
+  )
+
   return (
     <div
       className="group flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/40"
       onClick={() => {
-        previewSongSlide(fullSong, section)
+        previewSongSlide(fullSong.song.title, label, section.lyrics)
       }}
       onDoubleClick={() => {
-        presentSongSlide(fullSong, section)
+        presentSongSlide(fullSong.song.title, label, section.lyrics)
       }}
       title="Click to preview slide • Double-click to present live"
     >
       <span className="mt-0.5 min-w-[72px] text-[0.6rem] font-medium tracking-wider text-muted-foreground uppercase">
-        {sectionLabel(section.section_type as string, section.section_number)}
+        {label}
       </span>
       <p className="line-clamp-2 flex-1 text-xs leading-relaxed text-muted-foreground group-hover:text-foreground">
         {section.lyrics}

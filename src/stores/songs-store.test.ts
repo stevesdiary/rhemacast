@@ -32,7 +32,7 @@ const sampleSong: Song = {
 }
 
 const sampleSongWithSections: SongWithSections = {
-  ...sampleSong,
+  song: sampleSong,
   sections: [
     {
       id: 10,

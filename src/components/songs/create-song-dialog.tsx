@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PlusIcon, Trash2Icon, SparklesIcon, MusicIcon } from "lucide-react"
 import { toast } from "sonner"
 import { createSong } from "@/stores/songs-store"

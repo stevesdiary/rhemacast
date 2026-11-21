@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Slider } from "@/components/ui/slider"
+import { Switch } from "@/components/ui/switch"
 import {
   Dialog,
   DialogContent,
