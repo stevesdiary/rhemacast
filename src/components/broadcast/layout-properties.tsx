@@ -50,8 +50,12 @@ function ElementBoxControls({
           return (
             <div key={field.key} className="flex flex-col gap-1">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-muted-foreground">{field.label}</label>
-                <span className="text-[10px] tabular-nums text-muted-foreground">{px}px</span>
+                <label className="text-xs font-medium text-muted-foreground">
+                  {field.label}
+                </label>
+                <span className="text-[10px] text-muted-foreground tabular-nums">
+                  {px}px
+                </span>
               </div>
               <Input
                 type="number"
@@ -83,11 +87,17 @@ export function LayoutProperties() {
 
   const layout = draftTheme.layout
   const resolution = draftTheme.resolution
-  const referenceGap = layout.referenceGap ?? Math.max(16, Math.round(draftTheme.reference.fontSize * 0.5))
+  const referenceGap =
+    layout.referenceGap ??
+    Math.max(16, Math.round(draftTheme.reference.fontSize * 0.5))
   const freeMode = layout.mode === "free"
 
-  const bgWidthPx = Math.round((layout.backgroundWidth / 100) * resolution.width)
-  const bgHeightPx = Math.round((layout.backgroundHeight / 100) * resolution.height)
+  const bgWidthPx = Math.round(
+    (layout.backgroundWidth / 100) * resolution.width
+  )
+  const bgHeightPx = Math.round(
+    (layout.backgroundHeight / 100) * resolution.height
+  )
   // The text area is a percentage of the background region, not of the frame
   // (verse-renderer.ts computes it against bgW/bgH), so the readout has to
   // nest the same way or it lies whenever the background is not full-bleed.
@@ -147,8 +157,10 @@ export function LayoutProperties() {
       {/* Width */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-medium text-muted-foreground">Width</label>
-          <span className="text-xs tabular-nums text-muted-foreground">
+          <label className="text-xs font-medium text-muted-foreground">
+            Width
+          </label>
+          <span className="text-xs text-muted-foreground tabular-nums">
             {layout.backgroundWidth}% ({bgWidthPx}px)
           </span>
         </div>
@@ -164,8 +176,10 @@ export function LayoutProperties() {
       {/* Height */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-medium text-muted-foreground">Height</label>
-          <span className="text-xs tabular-nums text-muted-foreground">
+          <label className="text-xs font-medium text-muted-foreground">
+            Height
+          </label>
+          <span className="text-xs text-muted-foreground tabular-nums">
             {layout.backgroundHeight}% ({bgHeightPx}px)
           </span>
         </div>
@@ -186,8 +200,10 @@ export function LayoutProperties() {
       {/* Text Width */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-medium text-muted-foreground">Text Width</label>
-          <span className="text-xs tabular-nums text-muted-foreground">
+          <label className="text-xs font-medium text-muted-foreground">
+            Text Width
+          </label>
+          <span className="text-xs text-muted-foreground tabular-nums">
             {layout.textAreaWidth}% ({textWidthPx}px)
           </span>
         </div>
@@ -203,8 +219,10 @@ export function LayoutProperties() {
       {/* Text Height */}
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
-          <label className="text-xs font-medium text-muted-foreground">Text Height</label>
-          <span className="text-xs tabular-nums text-muted-foreground">
+          <label className="text-xs font-medium text-muted-foreground">
+            Text Height
+          </label>
+          <span className="text-xs text-muted-foreground tabular-nums">
             {layout.textAreaHeight}% ({textHeightPx}px)
           </span>
         </div>
@@ -224,39 +242,55 @@ export function LayoutProperties() {
 
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Top</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Top
+          </label>
           <Input
             type="number"
             min={0}
             value={layout.padding.top}
-            onChange={(e) => update("layout.padding.top", Number(e.target.value))}
+            onChange={(e) =>
+              update("layout.padding.top", Number(e.target.value))
+            }
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Right</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Right
+          </label>
           <Input
             type="number"
             min={0}
             value={layout.padding.right}
-            onChange={(e) => update("layout.padding.right", Number(e.target.value))}
+            onChange={(e) =>
+              update("layout.padding.right", Number(e.target.value))
+            }
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Bottom</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Bottom
+          </label>
           <Input
             type="number"
             min={0}
             value={layout.padding.bottom}
-            onChange={(e) => update("layout.padding.bottom", Number(e.target.value))}
+            onChange={(e) =>
+              update("layout.padding.bottom", Number(e.target.value))
+            }
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-muted-foreground">Left</label>
+          <label className="text-xs font-medium text-muted-foreground">
+            Left
+          </label>
           <Input
             type="number"
             min={0}
             value={layout.padding.left}
-            onChange={(e) => update("layout.padding.left", Number(e.target.value))}
+            onChange={(e) =>
+              update("layout.padding.left", Number(e.target.value))
+            }
           />
         </div>
       </div>
@@ -270,8 +304,12 @@ export function LayoutProperties() {
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-muted-foreground">Verse / Reference</label>
-              <span className="text-xs tabular-nums text-muted-foreground">{referenceGap}px</span>
+              <label className="text-xs font-medium text-muted-foreground">
+                Verse / Reference
+              </label>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {referenceGap}px
+              </span>
             </div>
             <Slider
               min={0}
@@ -289,7 +327,9 @@ export function LayoutProperties() {
 
           {/* Reference Position */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Reference Position</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Reference Position
+            </label>
             <Select
               value={draftTheme.reference.position}
               onValueChange={(v) => update("reference.position", v)}

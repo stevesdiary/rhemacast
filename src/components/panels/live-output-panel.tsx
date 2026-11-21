@@ -67,7 +67,7 @@ export function LiveOutputPanel() {
         >
           <span
             className={cn(
-              "text-[0.625rem] font-medium uppercase tracking-wider transition-colors",
+              "text-[0.625rem] font-medium tracking-wider uppercase transition-colors",
               autoLive ? "text-foreground" : "text-muted-foreground"
             )}
           >
@@ -83,7 +83,7 @@ export function LiveOutputPanel() {
         <label className="ml-2 flex items-center gap-2">
           <span
             className={cn(
-              "text-[0.625rem] font-medium uppercase tracking-wider transition-colors",
+              "text-[0.625rem] font-medium tracking-wider uppercase transition-colors",
               isLive ? "text-emerald-400" : "text-muted-foreground"
             )}
           >

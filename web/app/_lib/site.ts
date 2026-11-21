@@ -46,7 +46,7 @@ export const SITE = {
     languages: "2+",
     translations: "6+",
   },
-} as const;
+} as const
 
 /**
  * Where a "Download" CTA should point: straight at the installer for the
@@ -57,13 +57,13 @@ export const SITE = {
 export function downloadHref(platform: string | null | undefined): string {
   switch (platform) {
     case "windows":
-      return SITE.repo.downloadWindows;
+      return SITE.repo.downloadWindows
     case "mac":
-      return SITE.repo.downloadMac;
+      return SITE.repo.downloadMac
     case "linux":
-      return SITE.repo.downloadLinux;
+      return SITE.repo.downloadLinux
     default:
-      return SITE.repo.latestRelease;
+      return SITE.repo.latestRelease
   }
 }
 
@@ -71,20 +71,20 @@ export async function getGitHubStars(): Promise<number> {
   try {
     const headers: Record<string, string> = {
       Accept: "application/vnd.github+json",
-    };
-    const token = process.env.GITHUB_TOKEN;
-    if (token) headers.Authorization = `Bearer ${token}`;
+    }
+    const token = process.env.GITHUB_TOKEN
+    if (token) headers.Authorization = `Bearer ${token}`
 
     const res = await fetch(
       `https://api.github.com/repos/${SITE.repo.owner}/${SITE.repo.name}`,
       { headers }
-    );
-    if (!res.ok) return SITE.repo.stars.fallback;
-    const data = (await res.json()) as { stargazers_count?: number };
+    )
+    if (!res.ok) return SITE.repo.stars.fallback
+    const data = (await res.json()) as { stargazers_count?: number }
     return typeof data.stargazers_count === "number"
       ? data.stargazers_count
-      : SITE.repo.stars.fallback;
+      : SITE.repo.stars.fallback
   } catch {
-    return SITE.repo.stars.fallback;
+    return SITE.repo.stars.fallback
   }
 }

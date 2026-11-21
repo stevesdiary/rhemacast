@@ -20,7 +20,10 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { CanvasVerse } from "@/components/ui/canvas-verse"
 import { cn } from "@/lib/utils"
-import { ndiFrameRateToNumber, ndiResolutionDimensions } from "@/lib/broadcast-output-control"
+import {
+  ndiFrameRateToNumber,
+  ndiResolutionDimensions,
+} from "@/lib/broadcast-output-control"
 import { useBroadcastStore } from "@/stores"
 import type { BroadcastOutput, BroadcastOutputStatus } from "@/types"
 import { MAIN_OUTPUT_ID } from "@/types"
@@ -37,7 +40,10 @@ interface OutputCardProps {
   busy?: boolean
 }
 
-function transportLabel(output: BroadcastOutput, monitorLabel: string | undefined): string {
+function transportLabel(
+  output: BroadcastOutput,
+  monitorLabel: string | undefined
+): string {
   if (output.type === "display") {
     return monitorLabel ?? `Display ${output.monitorIndex + 1}`
   }
@@ -65,7 +71,10 @@ export function OutputCard({
   const [draftName, setDraftName] = useState(output.name)
 
   const theme = themes.find((t) => t.id === output.themeId) ?? themes[0]
-  const onAir = output.type === "display" ? (status?.previewOpen ?? false) : (status?.ndiActive ?? false)
+  const onAir =
+    output.type === "display"
+      ? (status?.previewOpen ?? false)
+      : (status?.ndiActive ?? false)
   const isDefault = output.id === MAIN_OUTPUT_ID
 
   const commitRename = () => {
@@ -82,7 +91,10 @@ export function OutputCard({
           <CanvasVerse
             theme={theme}
             verse={isLive && onAir ? liveVerse : null}
-            className={cn("aspect-video w-full", !onAir && "opacity-45 saturate-50")}
+            className={cn(
+              "aspect-video w-full",
+              !onAir && "opacity-45 saturate-50"
+            )}
           />
         ) : (
           <div className="aspect-video w-full bg-muted" />
@@ -90,15 +102,21 @@ export function OutputCard({
         <span
           className={cn(
             "absolute top-1.5 left-1.5 inline-flex items-center gap-1.5 rounded-4xl border px-2 py-0.5 text-[0.625rem] font-semibold tracking-wider uppercase backdrop-blur-sm",
-            onAir && output.type === "display" && "border-destructive/40 bg-destructive/15 text-destructive",
-            onAir && output.type === "ndi" && "border-emerald-500/40 bg-emerald-500/15 text-emerald-400",
+            onAir &&
+              output.type === "display" &&
+              "border-destructive/40 bg-destructive/15 text-destructive",
+            onAir &&
+              output.type === "ndi" &&
+              "border-emerald-500/40 bg-emerald-500/15 text-emerald-400",
             !onAir && "border-border bg-background/70 text-muted-foreground"
           )}
         >
           <span
             className={cn(
               "size-1.5 rounded-full",
-              onAir && output.type === "display" && "animate-pulse bg-destructive",
+              onAir &&
+                output.type === "display" &&
+                "animate-pulse bg-destructive",
               onAir && output.type === "ndi" && "bg-emerald-400",
               !onAir && "bg-muted-foreground"
             )}
@@ -126,9 +144,14 @@ export function OutputCard({
             />
           ) : (
             <div className="flex items-center gap-1.5">
-              <span className="truncate text-sm font-semibold">{output.name}</span>
+              <span className="truncate text-sm font-semibold">
+                {output.name}
+              </span>
               {isDefault && (
-                <Badge variant="outline" className="h-4 px-1.5 text-[0.5625rem] tracking-wider uppercase">
+                <Badge
+                  variant="outline"
+                  className="h-4 px-1.5 text-[0.5625rem] tracking-wider uppercase"
+                >
                   Default
                 </Badge>
               )}
@@ -140,7 +163,9 @@ export function OutputCard({
             ) : (
               <RadioIcon className="size-3 shrink-0" />
             )}
-            <span className="truncate">{transportLabel(output, monitorLabel)}</span>
+            <span className="truncate">
+              {transportLabel(output, monitorLabel)}
+            </span>
           </div>
         </div>
 
@@ -183,7 +208,9 @@ export function OutputCard({
       </div>
 
       <div className="flex items-center justify-between px-0.5 pb-0.5">
-        <span className="truncate text-[0.6875rem] text-muted-foreground">{theme?.name ?? "No theme"}</span>
+        <span className="truncate text-[0.6875rem] text-muted-foreground">
+          {theme?.name ?? "No theme"}
+        </span>
         <Switch
           checked={onAir}
           disabled={busy}

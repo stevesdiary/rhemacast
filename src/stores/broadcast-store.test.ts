@@ -44,7 +44,7 @@ describe("broadcast store sync", () => {
       expect.objectContaining({
         theme: expect.objectContaining({ id: theme.id }),
         verse: expect.objectContaining({ reference: "John 3:16" }),
-      }),
+      })
     )
   })
 
@@ -78,17 +78,23 @@ describe("broadcast store sync", () => {
     expect(emitToMock).toHaveBeenCalledWith(
       "broadcast-main",
       "broadcast:verse-update",
-      expect.objectContaining({ theme: expect.objectContaining({ id: themeA.id }) }),
+      expect.objectContaining({
+        theme: expect.objectContaining({ id: themeA.id }),
+      })
     )
     expect(emitToMock).toHaveBeenCalledWith(
       "broadcast-out-b",
       "broadcast:verse-update",
-      expect.objectContaining({ theme: expect.objectContaining({ id: themeB.id }) }),
+      expect.objectContaining({
+        theme: expect.objectContaining({ id: themeB.id }),
+      })
     )
     expect(emitToMock).toHaveBeenCalledWith(
       "broadcast-out-c",
       "broadcast:verse-update",
-      expect.objectContaining({ theme: expect.objectContaining({ id: themeA.id }) }),
+      expect.objectContaining({
+        theme: expect.objectContaining({ id: themeA.id }),
+      })
     )
   })
 
@@ -107,7 +113,9 @@ describe("broadcast store sync", () => {
     useBroadcastStore.getState().removeOutput("out-b")
     useBroadcastStore.getState().removeOutput("main")
 
-    expect(useBroadcastStore.getState().outputs.map((o) => o.id)).toEqual(["main"])
+    expect(useBroadcastStore.getState().outputs.map((o) => o.id)).toEqual([
+      "main",
+    ])
 
     emitToMock.mockClear()
     useBroadcastStore.getState().syncBroadcastOutput()
@@ -115,7 +123,7 @@ describe("broadcast store sync", () => {
     expect(emitToMock).toHaveBeenCalledWith(
       "broadcast-main",
       "broadcast:verse-update",
-      expect.anything(),
+      expect.anything()
     )
   })
 
@@ -154,7 +162,9 @@ describe("broadcast store sync", () => {
     expect(emitToMock).toHaveBeenCalledWith(
       "broadcast-out-b",
       "broadcast:verse-update",
-      expect.objectContaining({ theme: expect.objectContaining({ name: "tweaked" }) }),
+      expect.objectContaining({
+        theme: expect.objectContaining({ name: "tweaked" }),
+      })
     )
   })
 
@@ -229,7 +239,7 @@ describe("broadcast store sync", () => {
     expect(emitToMock).toHaveBeenCalledWith(
       "broadcast-main",
       "broadcast:verse-update",
-      expect.objectContaining({ verse: null }),
+      expect.objectContaining({ verse: null })
     )
   })
 
@@ -245,7 +255,7 @@ describe("broadcast store sync", () => {
       "broadcast:verse-update",
       expect.objectContaining({
         verse: expect.objectContaining({ reference: "John 3:16" }),
-      }),
+      })
     )
   })
 
@@ -259,7 +269,7 @@ describe("broadcast store sync", () => {
     expect(emitToMock).toHaveBeenCalledWith(
       "broadcast-main",
       "broadcast:verse-update",
-      expect.objectContaining({ verse: null }),
+      expect.objectContaining({ verse: null })
     )
     expect(useBroadcastStore.getState().liveVerse).toEqual(sampleLiveVerse)
   })
@@ -302,7 +312,11 @@ describe("migrateLegacyOutputs", () => {
     const { migrateLegacyOutputs } = await import("./broadcast-store")
     const outputs = migrateLegacyOutputs(undefined, undefined)
     expect(outputs).toHaveLength(1)
-    expect(outputs[0]).toMatchObject({ id: "main", type: "display", name: "Main Display" })
+    expect(outputs[0]).toMatchObject({
+      id: "main",
+      type: "display",
+      name: "Main Display",
+    })
   })
 
   it("carries the legacy active theme onto the main output", async () => {
@@ -316,7 +330,11 @@ describe("migrateLegacyOutputs", () => {
     const { migrateLegacyOutputs } = await import("./broadcast-store")
     const outputs = migrateLegacyOutputs("custom-theme-1", "custom-theme-2")
     expect(outputs).toHaveLength(2)
-    expect(outputs[1]).toMatchObject({ id: "alt", type: "ndi", themeId: "custom-theme-2" })
+    expect(outputs[1]).toMatchObject({
+      id: "alt",
+      type: "ndi",
+      themeId: "custom-theme-2",
+    })
   })
 
   it("skips the alt output when its legacy theme is still the builtin default", async () => {
@@ -341,7 +359,9 @@ describe("updateDraftNested deep paths", () => {
 
     // Writing a leaf under an absent object creates the object with only that
     // key — which is why the surface panel writes the whole object first.
-    useBroadcastStore.getState().updateDraftNested("reference.surface.color", "#123456")
+    useBroadcastStore
+      .getState()
+      .updateDraftNested("reference.surface.color", "#123456")
     expect(useBroadcastStore.getState().draftTheme?.reference.surface).toEqual({
       color: "#123456",
     })

@@ -15,7 +15,9 @@ export function mark(label: string): void {
   // Defensive: never let instrumentation break the app (or tests that mock
   // invoke without covering ui_mark).
   try {
-    void Promise.resolve(invoke("ui_mark", { label, epochMs: t })).catch(() => {})
+    void Promise.resolve(invoke("ui_mark", { label, epochMs: t })).catch(
+      () => {}
+    )
   } catch {
     // ignore — marks are best-effort
   }

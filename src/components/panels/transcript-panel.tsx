@@ -34,7 +34,11 @@ function AudioLevelMeter() {
 /**
  * Leaf component that subscribes to `currentPartial`. Partials update per audio tick.
  */
-function LivePartialLine({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | null> }) {
+function LivePartialLine({
+  scrollRef,
+}: {
+  scrollRef: RefObject<HTMLDivElement | null>
+}) {
   const currentPartial = useTranscriptStore((s) => s.currentPartial)
 
   useEffect(() => {
@@ -116,13 +120,11 @@ export function TranscriptPanel() {
         bibleActions.selectVerse(detectedVerse)
       }
       // Navigate book search panel to this verse
-      useBibleStore
-        .getState()
-        .setPendingNavigation({
-          bookNumber: directHit.book_number,
-          chapter: directHit.chapter,
-          verse: directHit.verse,
-        })
+      useBibleStore.getState().setPendingNavigation({
+        bookNumber: directHit.book_number,
+        chapter: directHit.chapter,
+        verse: directHit.verse,
+      })
     }
 
     // Auto-queue high-confidence detections
@@ -138,7 +140,7 @@ export function TranscriptPanel() {
             d.chapter,
             d.verse,
             d.verse_ref,
-            d.verse_text,
+            d.verse_text
           )
       ) {
         continue
@@ -161,7 +163,11 @@ export function TranscriptPanel() {
           const existing = queue.items[dupIdx]
           // Backfill text if the existing item was queued without it
           // (e.g. an earlier detection emitted with empty verse text).
-          if (isVerseQueueItem(existing) && !existing.verse.text && d.verse_text) {
+          if (
+            isVerseQueueItem(existing) &&
+            !existing.verse.text &&
+            d.verse_text
+          ) {
             queue.backfillText(existing.id, d.verse_text)
           }
           queue.flashItem(existing.id)
@@ -309,7 +315,7 @@ export function TranscriptPanel() {
           </Button>
         ) : (
           <Button variant="ghost" size="sm" onClick={startTranscription}>
-              <MicIcon className="size-3" />
+            <MicIcon className="size-3" />
             Start transcribing
           </Button>
         )}

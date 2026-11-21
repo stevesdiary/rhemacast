@@ -24,7 +24,7 @@ export function useRemoteControl() {
           await listen(event, () => {
             if (cancelled) return
             handler()
-          }),
+          })
         )
       }
 

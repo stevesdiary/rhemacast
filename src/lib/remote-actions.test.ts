@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { Verse, VerseQueueItem } from "@/types"
+import type {
+  Verse,
+  VerseQueueItem,
+  SongQueueItem,
+  SongWithSections,
+  SectionType,
+} from "@/types"
 
 const mockInvoke = vi.fn()
 
@@ -15,6 +21,7 @@ import { remoteActions } from "./remote-actions"
 import { useBibleStore } from "@/stores/bible-store"
 import { useBroadcastStore } from "@/stores/broadcast-store"
 import { useQueueStore } from "@/stores/queue-store"
+import { useSongsStore } from "@/stores/songs-store"
 
 const johnThreeSixteen: Verse = {
   id: 26137,
@@ -67,7 +74,11 @@ beforeEach(() => {
       },
     ],
   })
-  useBroadcastStore.setState({ isLive: false, liveVerse: null, liveSourceVerse: null })
+  useBroadcastStore.setState({
+    isLive: false,
+    liveVerse: null,
+    liveSourceVerse: null,
+  })
   useQueueStore.setState({ items: [], activeIndex: null })
 })
 
@@ -77,11 +88,11 @@ describe("remoteActions.sendToLive", () => {
 
     remoteActions.sendToLive()
     await vi.waitFor(() =>
-      expect(useBroadcastStore.getState().liveVerse).not.toBeNull(),
+      expect(useBroadcastStore.getState().liveVerse).not.toBeNull()
     )
 
     expect(useBroadcastStore.getState().liveVerse?.reference).toBe(
-      "John 3:16 (KJV)",
+      "John 3:16 (KJV)"
     )
   })
 
@@ -226,5 +237,62 @@ describe("remoteActions.toggleOnAir", () => {
 
     remoteActions.toggleOnAir(false)
     expect(useBroadcastStore.getState().isLive).toBe(false)
+  })
+})
+
+const testSong: SongWithSections = {
+  song: {
+    id: 1,
+    title: "Amazing Grace",
+    author: "John Newton",
+    composer: "Traditional",
+    copyright: null,
+    ccli_number: "22025",
+    themes: ["grace"],
+  },
+  sections: [
+    {
+      id: 10,
+      song_id: 1,
+      section_type: "verse" as SectionType,
+      section_number: 1,
+      lyrics: "Line 1\nLine 2",
+      order_index: 1,
+    },
+  ],
+}
+
+function songQueueItemFor(song: SongWithSections): SongQueueItem {
+  return {
+    id: crypto.randomUUID(),
+    type: "song",
+    song,
+    section: null,
+    reference: song.song.title,
+    added_at: Date.now(),
+    source: "manual",
+  }
+}
+
+describe("remoteActions song queue navigation", () => {
+  it("steps line-by-line through active song slides, then advances to next item", async () => {
+    useBroadcastStore.setState({ isLive: true })
+    useSongsStore.setState({ activeSlideIndex: 0, displayMode: "line" })
+    useQueueStore.setState({
+      items: [songQueueItemFor(testSong), queueItemFor(johnThreeSixteen)],
+      activeIndex: 0,
+    })
+
+    // Advance within song to line 2
+    remoteActions.queueNext()
+    expect(useSongsStore.getState().activeSlideIndex).toBe(1)
+    expect(useQueueStore.getState().activeIndex).toBe(0)
+    expect(useBroadcastStore.getState().liveVerse?.segments[0].text).toBe(
+      "Line 2"
+    )
+
+    // Advance past end of song to next schedule item (verse)
+    remoteActions.queueNext()
+    expect(useQueueStore.getState().activeIndex).toBe(1)
   })
 })

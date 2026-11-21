@@ -1,9 +1,12 @@
-import { presentVerse } from "@/hooks/use-broadcast"
+import { presentVerse, presentSongSlide } from "@/hooks/use-broadcast"
 import { stepVerse } from "@/hooks/use-bible"
 import { useBibleStore } from "@/stores/bible-store"
 import { useBroadcastStore } from "@/stores/broadcast-store"
 import { useQueueStore } from "@/stores/queue-store"
-import { isVerseQueueItem } from "@/types"
+import { useSongsStore } from "@/stores/songs-store"
+import { useSettingsStore } from "@/stores/settings-store"
+import { generateSongSlides } from "@/lib/song-slides"
+import { isVerseQueueItem, isSongQueueItem } from "@/types"
 
 /**
  * Find the queue index of the verse currently on the live output.
@@ -17,24 +20,50 @@ function findLiveQueueIndex(): number | null {
     .getState()
     .items.findIndex(
       (item) =>
-        isVerseQueueItem(item) &&
-        item.reference === liveVerse.reference
+        (isVerseQueueItem(item) && item.reference === liveVerse.reference) ||
+        (isSongQueueItem(item) &&
+          liveVerse.reference.startsWith(item.song.song.title))
     )
   return index >= 0 ? index : null
 }
 
 async function presentQueueItem(index: number): Promise<void> {
   const item = useQueueStore.getState().items[index]
-  if (!item || !isVerseQueueItem(item)) return
-  // Navigate the Bible panel to the presented verse, as detections do
-  useBibleStore.getState().setPendingNavigation({
-    bookNumber: item.verse.book_number,
-    chapter: item.verse.chapter,
-    verse: item.verse.verse,
-  })
-  await presentVerse(item.verse).catch((e) =>
-    console.warn("[remote-actions] presentQueueItem failed:", e),
-  )
+  if (!item) return
+
+  if (isVerseQueueItem(item)) {
+    // Navigate the Bible panel to the presented verse, as detections do
+    useBibleStore.getState().setPendingNavigation({
+      bookNumber: item.verse.book_number,
+      chapter: item.verse.chapter,
+      verse: item.verse.verse,
+    })
+    await presentVerse(item.verse).catch((e) =>
+      console.warn("[remote-actions] presentQueueItem verse failed:", e)
+    )
+  } else if (isSongQueueItem(item)) {
+    const songStore = useSongsStore.getState()
+    const settingsStore = useSettingsStore.getState()
+    songStore.selectSong(item.song)
+    if (item.section) songStore.selectSection(item.section)
+    songStore.setActiveSlideIndex(0)
+
+    const mode = settingsStore.songDisplayMode ?? "line"
+    const slides = generateSongSlides(item.song, mode, item.section)
+    if (slides.length > 0) {
+      const slide = slides[0]
+      const lineInfo =
+        mode === "line" && slide.lineIndex && slide.totalLines
+          ? { current: slide.lineIndex, total: slide.totalLines }
+          : undefined
+      presentSongSlide(
+        slide.songTitle,
+        slide.sectionLabel,
+        slide.text,
+        lineInfo
+      )
+    }
+  }
 }
 
 function stepQueue(offset: number): void {
@@ -42,6 +71,41 @@ function stepQueue(offset: number): void {
   if (items.length === 0) return
 
   const current = activeIndex ?? findLiveQueueIndex()
+
+  // If a song is currently active, step slide-by-slide within the song first
+  if (current !== null && current >= 0 && current < items.length) {
+    const currentItem = items[current]
+    if (isSongQueueItem(currentItem)) {
+      const songStore = useSongsStore.getState()
+      const mode = useSettingsStore.getState().songDisplayMode ?? "line"
+      const slides = generateSongSlides(
+        currentItem.song,
+        mode,
+        currentItem.section
+      )
+      const currentSlideIdx = songStore.activeSlideIndex
+      const nextSlideIdx = currentSlideIdx + offset
+
+      if (nextSlideIdx >= 0 && nextSlideIdx < slides.length) {
+        // Step within current song
+        songStore.setActiveSlideIndex(nextSlideIdx)
+        const slide = slides[nextSlideIdx]
+        const lineInfo =
+          mode === "line" && slide.lineIndex && slide.totalLines
+            ? { current: slide.lineIndex, total: slide.totalLines }
+            : undefined
+        presentSongSlide(
+          slide.songTitle,
+          slide.sectionLabel,
+          slide.text,
+          lineInfo
+        )
+        return
+      }
+    }
+  }
+
+  // Otherwise advance to next/prev item in queue/schedule
   const target =
     current === null
       ? 0
@@ -66,7 +130,7 @@ export const remoteActions = {
     const { selectedVerse } = useBibleStore.getState()
     if (!selectedVerse) return
     void presentVerse(selectedVerse).catch((e) =>
-      console.warn("[remote-actions] sendToLive failed:", e),
+      console.warn("[remote-actions] sendToLive failed:", e)
     )
   },
 
@@ -92,5 +156,6 @@ export const remoteActions = {
   bibleNext: () => stepVerse("next"),
   biblePrev: () => stepVerse("prev"),
 
-  toggleOnAir: (active: boolean) => useBroadcastStore.getState().setLive(active),
+  toggleOnAir: (active: boolean) =>
+    useBroadcastStore.getState().setLive(active),
 }

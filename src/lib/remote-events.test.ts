@@ -26,7 +26,7 @@ describe("REMOTE_EVENTS", () => {
 
   it("matches the event names the Rust dispatcher emits", () => {
     expect(Object.values(REMOTE_EVENTS).sort()).toEqual(
-      [...EXPECTED_EVENT_NAMES].sort(),
+      [...EXPECTED_EVENT_NAMES].sort()
     )
   })
 

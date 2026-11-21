@@ -94,7 +94,8 @@ function DetectionCard({ detection }: { detection: DetectionResult }) {
               },
               reference: detection.verse_ref,
               confidence: detection.confidence,
-              source: detection.source === "direct" ? "ai-direct" : "ai-semantic",
+              source:
+                detection.source === "direct" ? "ai-direct" : "ai-semantic",
               added_at: Date.now(),
             })
           }}
@@ -120,7 +121,7 @@ function DetectionColumn({
       <div className="sticky top-0 z-10 flex items-center gap-1.5 border-b border-border bg-card px-3 py-1.5">
         <span
           className={cn(
-            "text-[0.5625rem] font-medium uppercase tracking-wider",
+            "text-[0.5625rem] font-medium tracking-wider uppercase",
             style.text
           )}
         >
@@ -137,7 +138,10 @@ function DetectionColumn({
           </p>
         ) : (
           detections.map((detection, i) => (
-            <DetectionCard key={`${detection.verse_ref}-${i}`} detection={detection} />
+            <DetectionCard
+              key={`${detection.verse_ref}-${i}`}
+              detection={detection}
+            />
           ))
         )}
       </div>

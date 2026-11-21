@@ -14,23 +14,30 @@ import type {
 } from "@/types"
 import { outputWindowLabel } from "@/types"
 
-export const NDI_RESOLUTION_OPTIONS: Array<{ value: NdiResolution; label: string }> = [
+export const NDI_RESOLUTION_OPTIONS: Array<{
+  value: NdiResolution
+  label: string
+}> = [
   { value: "r1080p", label: "1080p (1920×1080)" },
   { value: "r720p", label: "720p (1280×720)" },
   { value: "r4k", label: "4K (3840×2160)" },
 ]
 
-export const NDI_FRAME_RATE_OPTIONS: Array<{ value: NdiFrameRate; label: string }> = [
+export const NDI_FRAME_RATE_OPTIONS: Array<{
+  value: NdiFrameRate
+  label: string
+}> = [
   { value: "fps24", label: "24 fps" },
   { value: "fps30", label: "30 fps" },
   { value: "fps60", label: "60 fps" },
 ]
 
-export const NDI_ALPHA_OPTIONS: Array<{ value: NdiAlphaMode; label: string }> = [
-  { value: "noneOpaque", label: "None (Opaque)" },
-  { value: "straightAlpha", label: "Straight Alpha" },
-  { value: "premultipliedAlpha", label: "Premultiplied Alpha" },
-]
+export const NDI_ALPHA_OPTIONS: Array<{ value: NdiAlphaMode; label: string }> =
+  [
+    { value: "noneOpaque", label: "None (Opaque)" },
+    { value: "straightAlpha", label: "Straight Alpha" },
+    { value: "premultipliedAlpha", label: "Premultiplied Alpha" },
+  ]
 
 export function ndiFrameRateToNumber(frameRate: NdiFrameRate): number {
   switch (frameRate) {
@@ -58,7 +65,10 @@ export function ndiResolutionDimensions(resolution: NdiResolution): {
 }
 
 /** Tell the output window whether (and how) to pump NDI frames. */
-export function syncNdiConfigToOutput(output: BroadcastOutput, active: boolean): void {
+export function syncNdiConfigToOutput(
+  output: BroadcastOutput,
+  active: boolean
+): void {
   const dims = ndiResolutionDimensions(output.ndi.resolution)
   void emitTo(outputWindowLabel(output.id), "broadcast:ndi-config", {
     active,
@@ -83,7 +93,9 @@ async function isPreviewWindowVisible(outputId: string): Promise<boolean> {
 }
 
 /** Refresh the store's runtime status for one output from the OS. */
-export async function reconcileOutputStatus(output: BroadcastOutput): Promise<void> {
+export async function reconcileOutputStatus(
+  output: BroadcastOutput
+): Promise<void> {
   const previewOpen = await isPreviewWindowVisible(output.id)
   let ndiActive = false
   try {
@@ -115,8 +127,13 @@ export async function enableOutput(output: BroadcastOutput): Promise<boolean> {
         title: output.name,
       })
       const opened = await isPreviewWindowVisible(output.id)
-      void logInfo(`[broadcast-ui] open_broadcast_window '${output.id}' ok, visible=${opened}`)
-      store.setOutputStatus(output.id, { previewOpen: opened, ndiActive: false })
+      void logInfo(
+        `[broadcast-ui] open_broadcast_window '${output.id}' ok, visible=${opened}`
+      )
+      store.setOutputStatus(output.id, {
+        previewOpen: opened,
+        ndiActive: false,
+      })
       if (!opened) return false
       store.syncBroadcastOutputFor(output.id)
       syncNdiConfigToOutput(output, false)
@@ -137,7 +154,7 @@ export async function enableOutput(output: BroadcastOutput): Promise<boolean> {
       request,
     })
     void logInfo(
-      `[broadcast-ui] start_ndi '${output.id}' ok: ${session.sourceName} ${session.width}x${session.height}@${session.fps}`,
+      `[broadcast-ui] start_ndi '${output.id}' ok: ${session.sourceName} ${session.width}x${session.height}@${session.fps}`
     )
     store.setOutputStatus(output.id, { previewOpen: false, ndiActive: true })
     store.syncBroadcastOutputFor(output.id)
@@ -154,10 +171,14 @@ export async function enableOutput(output: BroadcastOutput): Promise<boolean> {
     }, 300)
     return true
   } catch (error) {
-    void logError(`[broadcast-ui] enable output '${output.id}' FAILED: ${String(error)}`)
+    void logError(
+      `[broadcast-ui] enable output '${output.id}' FAILED: ${String(error)}`
+    )
     toast.error(
-      output.type === "display" ? "Could not open display output" : "Could not start NDI",
-      { description: String(error) },
+      output.type === "display"
+        ? "Could not open display output"
+        : "Could not start NDI",
+      { description: String(error) }
     )
     return false
   }
@@ -177,11 +198,15 @@ export async function disableOutput(output: BroadcastOutput): Promise<boolean> {
     // would orphan a sender on the network. stop_ndi is a no-op when idle.
     await invoke("stop_ndi", { outputId: output.id })
     syncNdiConfigToOutput(output, false)
-    await invoke("close_broadcast_window", { outputId: output.id }).catch(() => {})
+    await invoke("close_broadcast_window", { outputId: output.id }).catch(
+      () => {}
+    )
     store.setOutputStatus(output.id, { previewOpen: false, ndiActive: false })
     return true
   } catch (error) {
-    void logError(`[broadcast-ui] disable output '${output.id}' FAILED: ${String(error)}`)
+    void logError(
+      `[broadcast-ui] disable output '${output.id}' FAILED: ${String(error)}`
+    )
     toast.error("Could not stop output", { description: String(error) })
     return false
   }

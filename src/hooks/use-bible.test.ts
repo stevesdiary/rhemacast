@@ -46,7 +46,8 @@ beforeEach(() => {
 describe("findLoadedVerse", () => {
   it("matches on book, chapter and verse together", () => {
     expect(
-      findLoadedVerse(johnThree, { bookNumber: 43, chapter: 3, verse: 7 })?.verse
+      findLoadedVerse(johnThree, { bookNumber: 43, chapter: 3, verse: 7 })
+        ?.verse
     ).toBe(7)
   })
 
@@ -151,7 +152,9 @@ describe("stepVerse across a chapter boundary", () => {
   })
 
   it("does nothing at the end of a book — stepping never crosses into the next book", async () => {
-    const malachiFour = Array.from({ length: 6 }, (_, i) => verse(39, 4, i + 1, "Malachi"))
+    const malachiFour = Array.from({ length: 6 }, (_, i) =>
+      verse(39, 4, i + 1, "Malachi")
+    )
     useBibleStore.setState({
       currentChapter: malachiFour,
       selectedVerse: malachiFour[5], // Malachi 4:6

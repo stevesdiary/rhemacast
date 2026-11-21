@@ -50,9 +50,7 @@ export async function findPython(): Promise<string> {
   process.exit(1)
 }
 
-export function parsePythonVersion(
-  output: string
-): [number, number, number] {
+export function parsePythonVersion(output: string): [number, number, number] {
   const match = output.trim().match(/Python\s+(\d+)\.(\d+)\.(\d+)/)
   if (!match) {
     throw new Error(`Could not parse Python version from: ${output.trim()}`)
@@ -72,9 +70,7 @@ export function isVersionSufficient(
 
 export async function ensureVenv(pythonCmd: string): Promise<void> {
   const venvPython =
-    process.platform === "win32"
-      ? getVenvBin("python")
-      : getVenvBin("python3")
+    process.platform === "win32" ? getVenvBin("python") : getVenvBin("python3")
 
   if (existsSync(venvPython)) {
     console.log(`  ⏭ Virtual environment already exists at ${VENV_DIR}`)
@@ -113,9 +109,7 @@ export async function installPipDeps(packages: string[]): Promise<void> {
  * Full Python environment setup: find Python, verify version, create venv,
  * install packages. Returns the path to the venv Python binary.
  */
-export async function ensurePythonEnv(
-  packages: string[]
-): Promise<string> {
+export async function ensurePythonEnv(packages: string[]): Promise<string> {
   console.log("\n🐍 Setting up Python environment...\n")
 
   const pythonCmd = await findPython()

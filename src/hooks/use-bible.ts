@@ -64,11 +64,7 @@ async function fetchVerse(
   })
 }
 
-async function searchVerses(
-  query: string,
-  limit = 20,
-  translationId?: number
-) {
+async function searchVerses(query: string, limit = 20, translationId?: number) {
   const id = translationId ?? useBibleStore.getState().activeTranslationId
   const results = await invoke<Verse[]>("search_verses", {
     query,
@@ -211,7 +207,9 @@ export async function stepVerse(
     if (ticket !== stepSeq) return
 
     if (cursorChapter.some((v) => v.verse === target.verse)) {
-      useBibleStore.getState().setPendingNavigation({ ...target, present: options?.present })
+      useBibleStore
+        .getState()
+        .setPendingNavigation({ ...target, present: options?.present })
       return
     }
 
@@ -222,7 +220,8 @@ export async function stepVerse(
     if (ticket !== stepSeq) return
     if (crossing.length === 0) return
 
-    const landing = direction === "next" ? crossing[0] : crossing[crossing.length - 1]
+    const landing =
+      direction === "next" ? crossing[0] : crossing[crossing.length - 1]
     useBibleStore.getState().setPendingNavigation({
       bookNumber: cursor.bookNumber,
       chapter: crossingChapter,

@@ -1,15 +1,15 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { IconBrandGithub, IconMenu2, IconX } from "@tabler/icons-react";
-import { Button } from "../ui/button";
-import { RhemaLogo } from "../ui/rhema-logo";
-import { SITE, downloadHref } from "../../_lib/site";
-import { usePlatform } from "../../_lib/use-platform";
-import { cn } from "../../_lib/utils";
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { IconBrandGithub, IconMenu2, IconX } from "@tabler/icons-react"
+import { Button } from "../ui/button"
+import { RhemaLogo } from "../ui/rhema-logo"
+import { SITE, downloadHref } from "../../_lib/site"
+import { usePlatform } from "../../_lib/use-platform"
+import { cn } from "../../_lib/utils"
 
-type NavLink = { href: string; label: string; external?: boolean };
+type NavLink = { href: string; label: string; external?: boolean }
 
 const LINKS: ReadonlyArray<NavLink> = [
   { href: "#features", label: "Features" },
@@ -18,33 +18,33 @@ const LINKS: ReadonlyArray<NavLink> = [
   { href: "/docs", label: "Docs" },
   { href: "#download", label: "Download" },
   { href: "#faq", label: "FAQs" },
-];
+]
 
 export function SiteNav({ stars }: { stars: number }) {
-  const [scrolled, setScrolled] = useState(false);
-  const [open, setOpen] = useState(false);
-  const platform = usePlatform();
+  const [scrolled, setScrolled] = useState(false)
+  const [open, setOpen] = useState(false)
+  const platform = usePlatform()
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
+    document.body.style.overflow = open ? "hidden" : ""
     return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
+      document.body.style.overflow = ""
+    }
+  }, [open])
 
   return (
     <header
       className={cn(
         "sticky top-0 z-50 w-full transition-colors duration-200",
         scrolled
-          ? "bg-background/80 backdrop-blur-md border-b border-border"
+          ? "border-b border-border bg-background/80 backdrop-blur-md"
           : "bg-background/0"
       )}
     >
@@ -55,7 +55,7 @@ export function SiteNav({ stars }: { stars: number }) {
 
         <nav
           aria-label="Primary"
-          className="hidden flex-1 items-center justify-center gap-5 xl:gap-8 lg:flex"
+          className="hidden flex-1 items-center justify-center gap-5 lg:flex xl:gap-8"
         >
           {LINKS.map((l) => (
             <Link
@@ -96,7 +96,7 @@ export function SiteNav({ stars }: { stars: number }) {
           aria-controls="mobile-nav"
           aria-label="Toggle menu"
           onClick={() => setOpen((v) => !v)}
-          className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-border-strong text-foreground hover:bg-white/5 lg:hidden"
+          className="border-border-strong inline-flex size-10 shrink-0 items-center justify-center rounded-full border text-foreground hover:bg-white/5 lg:hidden"
         >
           {open ? <IconX size={20} /> : <IconMenu2 size={20} />}
         </button>
@@ -131,7 +131,10 @@ export function SiteNav({ stars }: { stars: number }) {
               className="justify-center"
             >
               <IconBrandGithub size={16} aria-hidden stroke={2} />
-              GitHub <span className="text-muted-foreground">• {formatStars(stars)}</span>
+              GitHub{" "}
+              <span className="text-muted-foreground">
+                • {formatStars(stars)}
+              </span>
             </Button>
             <Button
               href={downloadHref(platform)}
@@ -145,10 +148,10 @@ export function SiteNav({ stars }: { stars: number }) {
         </div>
       </div>
     </header>
-  );
+  )
 }
 
 function formatStars(n: number) {
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
+  return String(n)
 }

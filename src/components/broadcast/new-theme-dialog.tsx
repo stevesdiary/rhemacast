@@ -1,4 +1,7 @@
-import { useBroadcastStore, type NewThemeLayoutKind } from "@/stores/broadcast-store"
+import {
+  useBroadcastStore,
+  type NewThemeLayoutKind,
+} from "@/stores/broadcast-store"
 import {
   Dialog,
   DialogContent,

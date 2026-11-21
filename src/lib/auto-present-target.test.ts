@@ -36,7 +36,13 @@ describe("pickAutoPresentTarget", () => {
 
   it("ignores semantic detections", () => {
     const target = pickAutoPresentTarget(
-      [detection({ verse_ref: "Isaiah 53:5", source: "semantic", confidence: 1.0 })],
+      [
+        detection({
+          verse_ref: "Isaiah 53:5",
+          source: "semantic",
+          confidence: 1.0,
+        }),
+      ],
       nothingDismissed
     )
 
@@ -45,7 +51,13 @@ describe("pickAutoPresentTarget", () => {
 
   it("ignores chapter-only detections", () => {
     const target = pickAutoPresentTarget(
-      [detection({ verse_ref: "Psalm 23", is_chapter_only: true, confidence: 1.0 })],
+      [
+        detection({
+          verse_ref: "Psalm 23",
+          is_chapter_only: true,
+          confidence: 1.0,
+        }),
+      ],
       nothingDismissed
     )
 

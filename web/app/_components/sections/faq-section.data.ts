@@ -1,4 +1,4 @@
-export type Faq = { question: string; answer: string };
+export type Faq = { question: string; answer: string }
 
 export const FAQS: readonly Faq[] = [
   {
@@ -52,7 +52,8 @@ export const FAQS: readonly Faq[] = [
       "Yes. Rhema outputs broadcast-ready overlays via NDI, which integrates natively with OBS Studio, vMix, and other professional live production software.",
   },
   {
-    question: "My computer warns me about Rhema on first launch. Is that normal?",
+    question:
+      "My computer warns me about Rhema on first launch. Is that normal?",
     answer:
       "Yes. Rhema is unsigned — there is no paid Apple or Windows certificate behind this free project — so both systems warn the first time. On Windows, choose More info, then Run anyway. On macOS, drag Rhema to your Applications folder, then open System Settings, go to Privacy & Security, and choose Open Anyway next to the notice about Rhema. You only do this once. If macOS instead says Rhema is damaged (releases up to v0.3.0), open Terminal and run: xattr -cr /Applications/Rhema.app",
   },
@@ -61,4 +62,4 @@ export const FAQS: readonly Faq[] = [
     answer:
       "Windows 10 or 11 on a 64-bit machine, macOS 11 Big Sur or newer on an Apple Silicon Mac, or a 64-bit Linux distribution. There is no Intel Mac build — Intel Mac owners can build Rhema from source on GitHub.",
   },
-];
+]

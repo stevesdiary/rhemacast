@@ -25,7 +25,10 @@ import { OutputEditorDialog } from "./output-editor-dialog"
 const RECONCILE_INTERVAL_MS = 750
 
 /** First monitor not already claimed by another display output. */
-function firstFreeMonitorIndex(outputs: BroadcastOutput[], monitorCount: number): number {
+function firstFreeMonitorIndex(
+  outputs: BroadcastOutput[],
+  monitorCount: number
+): number {
   const taken = new Set(
     outputs.filter((o) => o.type === "display").map((o) => o.monitorIndex)
   )
@@ -67,7 +70,7 @@ export function BroadcastOutputsDialog({
       void logInfo(
         `[broadcast-ui] availableMonitors -> ${result.length}: ${result
           .map((m) => `${m.name ?? "?"} ${m.size.width}x${m.size.height}`)
-          .join(", ")}`,
+          .join(", ")}`
       )
       setMonitors(result)
     } catch (error) {
@@ -99,7 +102,9 @@ export function BroadcastOutputsDialog({
     return () => clearInterval(intervalId)
   }, [open])
 
-  const editingOutput = editingId ? outputs.find((o) => o.id === editingId) : undefined
+  const editingOutput = editingId
+    ? outputs.find((o) => o.id === editingId)
+    : undefined
 
   // The draft id doubles as the editor's form identity, so it must stay stable
   // for as long as the editor is open — regenerating it (e.g. when a monitor is
@@ -111,7 +116,10 @@ export function BroadcastOutputsDialog({
       id: draftId,
       name,
       type: "display",
-      themeId: outputs.find((o) => o.id === MAIN_OUTPUT_ID)?.themeId ?? themes[0]?.id ?? "",
+      themeId:
+        outputs.find((o) => o.id === MAIN_OUTPUT_ID)?.themeId ??
+        themes[0]?.id ??
+        "",
       monitorIndex: firstFreeMonitorIndex(outputs, monitors.length),
       ndi: defaultNdiSettings(name),
     }
@@ -127,7 +135,9 @@ export function BroadcastOutputsDialog({
   }
 
   const handleToggle = (output: BroadcastOutput, enabled: boolean) =>
-    void withBusy(output.id, () => (enabled ? enableOutput(output) : disableOutput(output)))
+    void withBusy(output.id, () =>
+      enabled ? enableOutput(output) : disableOutput(output)
+    )
 
   const handleRemove = (output: BroadcastOutput) =>
     void withBusy(output.id, async () => {
@@ -150,7 +160,8 @@ export function BroadcastOutputsDialog({
     }
 
     const status = store.outputStatus[next.id]
-    const wasOnAir = (status?.previewOpen ?? false) || (status?.ndiActive ?? false)
+    const wasOnAir =
+      (status?.previewOpen ?? false) || (status?.ndiActive ?? false)
     const transportChanged =
       existing.type !== next.type ||
       existing.monitorIndex !== next.monitorIndex ||
@@ -169,7 +180,9 @@ export function BroadcastOutputsDialog({
         ndi: next.ndi,
       })
       if (wasOnAir && transportChanged) {
-        const updated = useBroadcastStore.getState().outputs.find((o) => o.id === next.id)
+        const updated = useBroadcastStore
+          .getState()
+          .outputs.find((o) => o.id === next.id)
         if (updated) await enableOutput(updated)
       }
     })
@@ -194,8 +207,8 @@ export function BroadcastOutputsDialog({
           <DialogHeader>
             <DialogTitle>Broadcast</DialogTitle>
             <DialogDescription>
-              Manage your outputs — external displays and NDI feeds all show the current live
-              verse, each with its own theme.
+              Manage your outputs — external displays and NDI feeds all show the
+              current live verse, each with its own theme.
             </DialogDescription>
           </DialogHeader>
 
@@ -213,7 +226,9 @@ export function BroadcastOutputsDialog({
                     setEditorOpen(true)
                   }}
                   onToggle={(enabled) => handleToggle(output, enabled)}
-                  onDuplicate={() => useBroadcastStore.getState().duplicateOutput(output.id)}
+                  onDuplicate={() =>
+                    useBroadcastStore.getState().duplicateOutput(output.id)
+                  }
                   onRemove={() => handleRemove(output)}
                 />
               ))}
@@ -235,7 +250,8 @@ export function BroadcastOutputsDialog({
           </ScrollArea>
 
           <p className="text-xs text-muted-foreground">
-            {onAirCount} of {outputs.length} {outputs.length === 1 ? "output" : "outputs"} on air
+            {onAirCount} of {outputs.length}{" "}
+            {outputs.length === 1 ? "output" : "outputs"} on air
           </p>
         </DialogContent>
       </Dialog>

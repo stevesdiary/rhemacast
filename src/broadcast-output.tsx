@@ -17,15 +17,16 @@ function uint8ToBase64(bytes: Uint8Array | Uint8ClampedArray): string {
     parts.push(
       String.fromCharCode.apply(
         null,
-        bytes.subarray(i, i + CHUNK) as unknown as number[],
-      ),
+        bytes.subarray(i, i + CHUNK) as unknown as number[]
+      )
     )
   }
   return btoa(parts.join(""))
 }
 
 /** Read output ID from URL query param (?output=main or ?output=alt). Defaults to "main". */
-const OUTPUT_ID = new URLSearchParams(window.location.search).get("output") ?? "main"
+const OUTPUT_ID =
+  new URLSearchParams(window.location.search).get("output") ?? "main"
 
 interface BroadcastPayload {
   theme: BroadcastTheme
@@ -85,13 +86,16 @@ function BroadcastCanvas() {
 
   // Redraw once a theme's images land. The burst matters: without it NDI
   // receivers keep the flat fallback frame until the 2s keepalive fires.
-  const preloadThemeAssets = useCallback((theme: BroadcastTheme) => {
-    preloadThemeImages(theme, () => {
-      logDebug("Theme images loaded")
-      draw()
-      pushNdiBurstRef.current?.()
-    })
-  }, [draw, logDebug])
+  const preloadThemeAssets = useCallback(
+    (theme: BroadcastTheme) => {
+      preloadThemeImages(theme, () => {
+        logDebug("Theme images loaded")
+        draw()
+        pushNdiBurstRef.current?.()
+      })
+    },
+    [draw, logDebug]
+  )
 
   const pushNdiFrame = useCallback(async () => {
     if (!ndiConfigRef.current.active) return
@@ -112,7 +116,8 @@ function BroadcastCanvas() {
       let sourceHeight = canvas.height
 
       if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
-        const ndiCanvas = ndiCanvasRef.current ?? document.createElement("canvas")
+        const ndiCanvas =
+          ndiCanvasRef.current ?? document.createElement("canvas")
         ndiCanvas.width = targetWidth
         ndiCanvas.height = targetHeight
         const ndiCtx = ndiCanvas.getContext("2d")
@@ -172,30 +177,41 @@ function BroadcastCanvas() {
 
     const currentWindow = getCurrentWebviewWindow()
     logDebug("Listener registration started", { label: currentWindow.label })
-    const unlisten = currentWindow.listen<BroadcastPayload>("broadcast:verse-update", (event) => {
-      latestData.current = {
-        ...event.payload,
-        theme: normalizeTheme(event.payload.theme),
+    const unlisten = currentWindow.listen<BroadcastPayload>(
+      "broadcast:verse-update",
+      (event) => {
+        latestData.current = {
+          ...event.payload,
+          theme: normalizeTheme(event.payload.theme),
+        }
+        preloadThemeAssets(event.payload.theme)
+        logDebug("Received broadcast:verse-update", {
+          hasVerse: Boolean(event.payload.verse),
+          themeId: event.payload.theme.id,
+        })
+        draw()
+        pushNdiBurst()
       }
-      preloadThemeAssets(event.payload.theme)
-      logDebug("Received broadcast:verse-update", {
-        hasVerse: Boolean(event.payload.verse),
-        themeId: event.payload.theme.id,
-      })
-      draw()
-      pushNdiBurst()
-    })
+    )
 
-    const unlistenNdiConfig = currentWindow.listen<NdiConfigEventPayload>("broadcast:ndi-config", (event) => {
-      ndiConfigRef.current = event.payload
-      logDebug("Received broadcast:ndi-config", event.payload)
-      // Push burst when NDI becomes active
-      if (event.payload.active) pushNdiBurst()
-    })
+    const unlistenNdiConfig = currentWindow.listen<NdiConfigEventPayload>(
+      "broadcast:ndi-config",
+      (event) => {
+        ndiConfigRef.current = event.payload
+        logDebug("Received broadcast:ndi-config", event.payload)
+        // Push burst when NDI becomes active
+        if (event.payload.active) pushNdiBurst()
+      }
+    )
 
     // Request current NDI status on mount (fixes race condition
     // where NDI is started before this window opens)
-    void invoke<{ active: boolean; width: number; height: number; fps: number } | null>("get_ndi_status", { outputId: OUTPUT_ID })
+    void invoke<{
+      active: boolean
+      width: number
+      height: number
+      fps: number
+    } | null>("get_ndi_status", { outputId: OUTPUT_ID })
       .then((status) => {
         if (status && status.active) {
           ndiConfigRef.current = {
@@ -218,11 +234,14 @@ function BroadcastCanvas() {
       pushNdiBurst()
     })
 
-    void currentWindow.emitTo("main", "broadcast:output-ready", { outputId: OUTPUT_ID }).then(() => {
-      logDebug("Sent broadcast:output-ready")
-    }).catch(() => {
-      console.warn("[broadcast-output] failed to send output-ready event")
-    })
+    void currentWindow
+      .emitTo("main", "broadcast:output-ready", { outputId: OUTPUT_ID })
+      .then(() => {
+        logDebug("Sent broadcast:output-ready")
+      })
+      .catch(() => {
+        console.warn("[broadcast-output] failed to send output-ready event")
+      })
 
     return () => {
       unsubscribeFonts()

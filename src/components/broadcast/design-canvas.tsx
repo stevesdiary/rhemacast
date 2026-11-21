@@ -71,7 +71,8 @@ export function DesignCanvas() {
     canvas.setViewportTransform(identity)
 
     // Calculate zoom to fit workspace with padding
-    const scale = fabric.util.findScaleToFit(workspace, { width: cw, height: ch }) * 0.85
+    const scale =
+      fabric.util.findScaleToFit(workspace, { width: cw, height: ch }) * 0.85
     canvas.setZoom(scale)
 
     // Center the workspace
@@ -209,7 +210,9 @@ export function DesignCanvas() {
           ? seedFreeBoxesFromMetrics(metrics, theme.resolution)
           : null
         if (!seeded) return
-        store.updateDraft({ layout: { ...theme.layout, mode: "free", ...seeded } })
+        store.updateDraft({
+          layout: { ...theme.layout, mode: "free", ...seeded },
+        })
         theme = useBroadcastStore.getState().draftTheme
         if (!theme) return
       }
@@ -223,8 +226,16 @@ export function DesignCanvas() {
       if (!box) return
       const widthPx = (box.width / 100) * WS_WIDTH
       const heightPx = (box.height / 100) * WS_HEIGHT
-      const localX = clamp(obj.left - wsTopLeft.x, 0, Math.max(0, WS_WIDTH - widthPx))
-      const localY = clamp(obj.top - wsTopLeft.y, 0, Math.max(0, WS_HEIGHT - heightPx))
+      const localX = clamp(
+        obj.left - wsTopLeft.x,
+        0,
+        Math.max(0, WS_WIDTH - widthPx)
+      )
+      const localY = clamp(
+        obj.top - wsTopLeft.y,
+        0,
+        Math.max(0, WS_HEIGHT - heightPx)
+      )
       store.updateDraftNested(`layout.${key}`, {
         ...box,
         x: Math.round((localX / WS_WIDTH) * 10000) / 100,
@@ -262,7 +273,11 @@ export function DesignCanvas() {
       rafIdRef.current = null
       void canvas.dispose()
       fabricRef.current = null
-      objectsRef.current = { workspace: null, referenceRegion: null, verseRegion: null }
+      objectsRef.current = {
+        workspace: null,
+        referenceRegion: null,
+        verseRegion: null,
+      }
     }
   }, [editingThemeId, autoZoom, resyncLatestTheme])
 
@@ -331,15 +346,24 @@ export function DesignCanvas() {
   }, [resyncLatestTheme])
 
   const elementLabel =
-    selectedElement === "verse" ? "verse"
-      : selectedElement === "reference" ? "reference"
+    selectedElement === "verse"
+      ? "verse"
+      : selectedElement === "reference"
+        ? "reference"
         : "none"
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Toolbar */}
-      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-border/40 px-3" style={{ background: "#18181b" }}>
-        <Button variant="ghost" size="icon-xs" className="text-muted-foreground">
+      <div
+        className="flex h-14 shrink-0 items-center gap-2 border-b border-border/40 px-3"
+        style={{ background: "#18181b" }}
+      >
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="text-muted-foreground"
+        >
           <MousePointer2Icon className="size-3.5" />
         </Button>
         <div className="flex items-center gap-1.5 text-[0.625rem] text-muted-foreground">
@@ -347,19 +371,38 @@ export function DesignCanvas() {
           <span>Grid</span>
         </div>
         <div className="flex-1" />
-        <Button variant="ghost" size="icon-xs" className="text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          className="text-muted-foreground"
+        >
           <SearchIcon className="size-3.5" />
         </Button>
-        <span className="min-w-12 text-center text-[0.625rem] font-medium tabular-nums text-muted-foreground">
+        <span className="min-w-12 text-center text-[0.625rem] font-medium text-muted-foreground tabular-nums">
           {zoomLevel}%
         </span>
-        <Button variant="ghost" size="icon-xs" onClick={zoomOut} className="text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={zoomOut}
+          className="text-muted-foreground"
+        >
           <MinusIcon className="size-3" />
         </Button>
-        <Button variant="ghost" size="icon-xs" onClick={zoomIn} className="text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={zoomIn}
+          className="text-muted-foreground"
+        >
           <PlusIcon className="size-3" />
         </Button>
-        <Button variant="ghost" size="icon-xs" onClick={autoZoom} className="text-muted-foreground">
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          onClick={autoZoom}
+          className="text-muted-foreground"
+        >
           <MaximizeIcon className="size-3.5" />
         </Button>
       </div>
@@ -368,15 +411,25 @@ export function DesignCanvas() {
       <div ref={containerRef} className="relative min-h-0 flex-1">
         <canvas ref={canvasElRef} />
         {!draftTheme && (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ background: "#18181b" }}>
-            <p className="text-xs text-muted-foreground">Select a theme to begin editing</p>
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ background: "#18181b" }}
+          >
+            <p className="text-xs text-muted-foreground">
+              Select a theme to begin editing
+            </p>
           </div>
         )}
       </div>
 
       {/* Status bar */}
-      <div className="flex h-8 shrink-0 items-center border-t border-border/40 px-3 text-[0.5625rem] text-muted-foreground/70" style={{ background: "#18181b" }}>
-        <span>Output: {WS_WIDTH} × {WS_HEIGHT}px</span>
+      <div
+        className="flex h-8 shrink-0 items-center border-t border-border/40 px-3 text-[0.5625rem] text-muted-foreground/70"
+        style={{ background: "#18181b" }}
+      >
+        <span>
+          Output: {WS_WIDTH} × {WS_HEIGHT}px
+        </span>
         <span className="mx-2">·</span>
         <span>Zoom: {zoomLevel}%</span>
         <span className="mx-2">·</span>
@@ -384,7 +437,10 @@ export function DesignCanvas() {
         <span className="mx-2">·</span>
         <span>
           {selectedElement ? (
-            <>Editing: <span className="font-medium text-primary">{elementLabel}</span></>
+            <>
+              Editing:{" "}
+              <span className="font-medium text-primary">{elementLabel}</span>
+            </>
           ) : (
             "Click frame to select"
           )}
@@ -444,8 +500,14 @@ async function syncThemeToCanvas(
         verseRect: metrics.verseBoxRect!,
       }
     : { referenceRect, verseRect }
-  const mappedReferenceRect = mapLocalRectToWorkspaceRect(hitRects.referenceRect, wsTopLeft)
-  const mappedVerseRect = mapLocalRectToWorkspaceRect(hitRects.verseRect, wsTopLeft)
+  const mappedReferenceRect = mapLocalRectToWorkspaceRect(
+    hitRects.referenceRect,
+    wsTopLeft
+  )
+  const mappedVerseRect = mapLocalRectToWorkspaceRect(
+    hitRects.verseRect,
+    wsTopLeft
+  )
 
   if (dragging !== "reference") {
     refRegion.set({
@@ -524,9 +586,10 @@ function drawTransparencyCheckerboard(ctx: CanvasRenderingContext2D): void {
   ctx.restore()
 }
 
-function renderThemeBitmap(
-  theme: BroadcastTheme,
-): { bitmap: HTMLCanvasElement; metrics: ReturnType<typeof renderVerse> } {
+function renderThemeBitmap(theme: BroadcastTheme): {
+  bitmap: HTMLCanvasElement
+  metrics: ReturnType<typeof renderVerse>
+} {
   const offscreen = document.createElement("canvas")
   offscreen.width = WS_WIDTH
   offscreen.height = WS_HEIGHT
