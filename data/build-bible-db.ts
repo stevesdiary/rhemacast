@@ -671,11 +671,11 @@ function main() {
   }
 
   console.log(`\n✅ rhema.db built successfully!`)
-  console.log(`   ${transTotal.c} translations`)
-  console.log(`   ${verseTotal.c.toLocaleString()} verses`)
-  console.log(`   ${crossTotal.c.toLocaleString()} cross-references`)
-  console.log(`   ${songTotal.c} songs`)
-  console.log(`   📁 ${DB_PATH}\n`)
+  // console.log(`   ${transTotal.c} translations`)
+  // console.log(`   ${verseTotal.c.toLocaleString()} verses`)
+  // console.log(`   ${crossTotal.c.toLocaleString()} cross-references`)
+  // console.log(`   ${songTotal.c} songs`)
+  // console.log(`   📁 ${DB_PATH}\n`)
 
   db.close()
 }
