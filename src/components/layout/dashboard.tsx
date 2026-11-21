@@ -7,82 +7,109 @@ import { SearchPanel } from "@/components/panels/search-panel"
 import { SongsSearchPanel } from "@/components/panels/songs-search-panel"
 import { DetectionsPanel } from "@/components/panels/detections-panel"
 import { EmbeddingWarningBanner } from "@/components/ui/embedding-warning-banner"
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable"
 
 export function Dashboard() {
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: "0px",
-        display: "grid",
-        // The `auto` row hosts the warning banner and collapses to 0 when
-        // there is nothing to warn about.
-        gridTemplateRows: "56px auto minmax(0, 2fr) minmax(0, 3fr)",
-        overflow: "hidden",
-      }}
-      className="bg-background"
-    >
+    <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
       {/* Row 1: Transport Bar */}
-      <div className="col-span-4">
+      <div className="shrink-0">
         <TransportBar />
       </div>
 
-      {/* Row 2: warning banner (collapses when healthy) */}
+      {/* Row 2: Warning banner (collapses to 0 when healthy) */}
       <EmbeddingWarningBanner />
 
-      {/* Row 2: 4 panels */}
-      <div
-        className="col-span-4 min-h-0 *:min-h-0"
-        style={{
-          padding: "12px",
-          display: "grid",
-          gap: "12px",
-          minHeight: 0,
-          overflow: "hidden",
-          gridTemplateColumns: "320px minmax(0, 1fr) minmax(0, 1fr) 320px",
-          gridTemplateRows: "minmax(0, 1fr)",
-        }}
-      >
-        <TranscriptPanel />
-        <PreviewPanel />
-        <LiveOutputPanel />
-        <QueuePanel />
-      </div>
-      {/* Row 3: Bible search | Songs search | Detections */}
-      <div className="col-span-4 grid min-h-0 grid-cols-3 gap-3 px-3 pb-3">
-        <SearchPanel />
-        <SongsSearchPanel />
-        <DetectionsPanel />
+      {/* Main Resizable Workspace */}
+      <div className="min-h-0 flex-1 p-2">
+        <ResizablePanelGroup orientation="vertical" className="h-full w-full">
+          {/* Upper Section: 4 Panels */}
+          <ResizablePanel
+            defaultSize="45%"
+            minSize="20%"
+            className="flex min-h-0 flex-col"
+          >
+            <ResizablePanelGroup
+              orientation="horizontal"
+              className="h-full w-full"
+            >
+              <ResizablePanel
+                defaultSize="22%"
+                minSize="14%"
+                className="flex min-h-0 flex-col p-1"
+              >
+                <TranscriptPanel />
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel
+                defaultSize="28%"
+                minSize="18%"
+                className="flex min-h-0 flex-col p-1"
+              >
+                <PreviewPanel />
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel
+                defaultSize="28%"
+                minSize="18%"
+                className="flex min-h-0 flex-col p-1"
+              >
+                <LiveOutputPanel />
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel
+                defaultSize="22%"
+                minSize="14%"
+                className="flex min-h-0 flex-col p-1"
+              >
+                <QueuePanel />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle orientation="horizontal" />
+
+          {/* Lower Section: 3 Panels */}
+          <ResizablePanel
+            defaultSize="55%"
+            minSize="20%"
+            className="flex min-h-0 flex-col"
+          >
+            <ResizablePanelGroup
+              orientation="horizontal"
+              className="h-full w-full"
+            >
+              <ResizablePanel
+                defaultSize="38%"
+                minSize="20%"
+                className="flex min-h-0 flex-col p-1"
+              >
+                <SearchPanel />
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel
+                defaultSize="38%"
+                minSize="20%"
+                className="flex min-h-0 flex-col p-1"
+              >
+                <SongsSearchPanel />
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel
+                defaultSize="24%"
+                minSize="14%"
+                className="flex min-h-0 flex-col p-1"
+              >
+                <DetectionsPanel />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
-    // <div
-    //   style={{
-    //     position: "fixed",
-    //     inset: "6px",
-    //     display: "grid",
-    //     gridTemplateColumns: "320px 1fr 1fr 340px",
-    //     gridTemplateRows: "64px 2fr 3fr",
-    //     gap: "6px",
-    //     overflow: "hidden",
-    //   }}
-    //   className="bg-background"
-    // >
-    //   {/* Row 1: Transport Bar */}
-    //   <div className="col-span-4">
-    //     <TransportBar />
-    //   </div>
-
-    //   {/* Row 2: 4 panels */}
-    //   <TranscriptPanel />
-    //   <PreviewPanel />
-    //   <LiveOutputPanel />
-    //   <QueuePanel />
-
-    //   {/* Row 3: Search + Detections (own grid, independent of top row columns) */}
-    //   <div className="col-span-4 grid min-h-0 grid-cols-[2fr_1fr] gap-[6px]">
-    //     <SearchPanel />
-    //     <DetectionsPanel />
-    //   </div>
-    // </div>
   )
 }
