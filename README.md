@@ -10,11 +10,11 @@ Rhema listens to a live sermon audio feed, transcribes speech in real time, dete
 
 ## Download
 
-| Platform | | Requires |
-|---|---|---|
-| **Windows** | [**Rhema-windows-x64-setup.exe**](https://github.com/openbezal/rhema/releases/latest/download/Rhema-windows-x64-setup.exe) | Windows 10/11 x64 |
-| **macOS** | [**Rhema-macos-arm64.dmg**](https://github.com/openbezal/rhema/releases/latest/download/Rhema-macos-arm64.dmg) | macOS 11 Big Sur or newer, **Apple Silicon** |
-| **Linux** | [**Rhema-linux-x86_64.AppImage**](https://github.com/openbezal/rhema/releases/latest/download/Rhema-linux-x86_64.AppImage) | x86_64; `.deb` and `.rpm` on the [release page](https://github.com/openbezal/rhema/releases/latest) |
+| Platform    |                                                                                                                            | Requires                                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| **Windows** | [**Rhema-windows-x64-setup.exe**](https://github.com/openbezal/rhema/releases/latest/download/Rhema-windows-x64-setup.exe) | Windows 10/11 x64                                                                                   |
+| **macOS**   | [**Rhema-macos-arm64.dmg**](https://github.com/openbezal/rhema/releases/latest/download/Rhema-macos-arm64.dmg)             | macOS 11 Big Sur or newer, **Apple Silicon**                                                        |
+| **Linux**   | [**Rhema-linux-x86_64.AppImage**](https://github.com/openbezal/rhema/releases/latest/download/Rhema-linux-x86_64.AppImage) | x86_64; `.deb` and `.rpm` on the [release page](https://github.com/openbezal/rhema/releases/latest) |
 
 There is no Intel Mac build — on an Intel Mac,
 [build from source](#getting-started).
@@ -22,7 +22,7 @@ There is no Intel Mac build — on an Intel Mac,
 Every build is **unsigned** — there is no Apple Developer or Windows code
 signing certificate behind this project — so each OS warns on first run.
 
-**Windows:** SmartScreen warns — *More info → Run anyway*.
+**Windows:** SmartScreen warns — _More info → Run anyway_.
 
 **macOS:** drag `Rhema.app` to Applications first, then open it. Gatekeeper
 blocks unsigned apps that carry the browser's quarantine flag; on macOS 15 and
@@ -72,26 +72,29 @@ speech-to-text stay inactive until you build from source and run
 
 ## Tech Stack
 
-| Layer | Technologies |
-|---|---|
-| **Frontend** | React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Zustand, Vite 7 |
-| **Backend** | Tauri v2, Rust (workspace with 7 crates) |
-| **AI/ML** | ONNX Runtime (Qwen3-0.6B embeddings), Aho-Corasick, Fuse.js |
-| **Database** | SQLite via rusqlite (bundled) with FTS5 |
-| **Broadcast** | NDI 6 SDK via dynamic loading (libloading FFI) |
-| **STT** | Local Whisper via `whisper-rs`; Deepgram WebSocket + REST (`tokio-tungstenite`) |
+| Layer         | Technologies                                                                    |
+| ------------- | ------------------------------------------------------------------------------- |
+| **Frontend**  | React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Zustand, Vite 7               |
+| **Backend**   | Tauri v2, Rust (workspace with 7 crates)                                        |
+| **AI/ML**     | ONNX Runtime (Qwen3-0.6B embeddings), Aho-Corasick, Fuse.js                     |
+| **Database**  | SQLite via rusqlite (bundled) with FTS5                                         |
+| **Broadcast** | NDI 6 SDK via dynamic loading (libloading FFI)                                  |
+| **STT**       | Local Whisper via `whisper-rs`; Deepgram WebSocket + REST (`tokio-tungstenite`) |
 
 ### Rust Crates
 
-| Crate | Purpose |
-|---|---|
-| `rhema-audio` | Audio device enumeration, capture, VAD (cpal) |
-| `rhema-stt` | Local Whisper (gated behind `whisper` Cargo feature) and Deepgram STT streaming + REST fallback |
-| `rhema-bible` | SQLite Bible DB, FTS5 search, cross-references |
+| Crate             | Purpose                                                                                                               |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `rhema-audio`     | Audio device enumeration, capture, VAD (cpal)                                                                         |
+| `rhema-stt`       | Local Whisper (gated behind `whisper` Cargo feature) and Deepgram STT streaming + REST fallback                       |
+| `rhema-bible`     | SQLite Bible DB, FTS5 search, cross-references                                                                        |
+| `rhema_songs`     | SQLite songs & lyrics FTS5 search engine                                                                              |
 | `rhema-detection` | Verse detection pipeline: direct, semantic, quotation, ensemble merger, sentence buffer, sermon context, reading mode |
-| `rhema-broadcast` | NDI video frame output via FFI |
-| `rhema-api` | Tauri command API layer |
-| `rhema-notes` | (placeholder) |
+| `rhema-broadcast` | NDI video frame output via FFI                                                                                        |
+| `rhema-api`       | Tauri command API layer                                                                                               |
+| `rhema-notes`     | (placeholder)                                                                                                         |
+
+> 📘 **Looking for a step-by-step onboarding guide?** See the full **[Developer Guide](DEVELOPMENT.md)** for local database initialization, seed commands, test workflows, and troubleshooting.
 
 ## Prerequisites
 
@@ -150,7 +153,7 @@ bun install
 
 One command sets up everything you need — Bible data, database, and the local Whisper model. It finishes in minutes and needs no Python:
 
-> **Windows:** run `bun run setup:windows` *before* `setup:all` and restart your terminal. See [Platform-specific setup](#platform-specific-setup) above.
+> **Windows:** run `bun run setup:windows` _before_ `setup:all` and restart your terminal. See [Platform-specific setup](#platform-specific-setup) above.
 
 ```bash
 bun run setup:all
@@ -162,11 +165,11 @@ This runs the required phases idempotently, skipping any whose output artifacts 
 2. Download Bible source data — single bundled archive containing all 10 translations plus the openbible.info cross-references zip
 3. Build SQLite Bible database (`data/rhema.db` with FTS5 + cross-references)
 4. –6. ~~ONNX model + verse embeddings~~ — skipped by default (see below)
-7. Download Whisper model (`ggml-large-v3-turbo-q8_0.bin`) into `models/whisper/`
+5. Download Whisper model (`ggml-large-v3-turbo-q8_0.bin`) into `models/whisper/`
 
 #### Optional: embedding re-ranking (`--with-embedding`)
 
-Everything above gives you the full search experience: live verse detection, exact/partial quote search, and typed references ("John 3:16") — benchmarked at recall@1 **0.836** across 152 queries. The embedding model adds semantic *paraphrase* matching in the Context search tab on top of that.
+Everything above gives you the full search experience: live verse detection, exact/partial quote search, and typed references ("John 3:16") — benchmarked at recall@1 **0.836** across 152 queries. The embedding model adds semantic _paraphrase_ matching in the Context search tab on top of that.
 
 ```bash
 bun run setup:all --with-embedding
@@ -195,6 +198,7 @@ Rhema supports two speech-to-text engines:
 
 **Option 1: Whisper (Local, Free)**
 Whisper runs locally on your machine with no API costs or per-minute billing.
+
 - Requires CMake + libclang — see [Platform-specific setup](#platform-specific-setup) above
 - The model (`ggml-large-v3-turbo-q8_0.bin`) is fetched as phase 7 of `setup:all`. Run `bun run download:whisper` to grab it on its own.
 
@@ -288,29 +292,29 @@ rhema/
 
 ## Scripts
 
-| Script | Description |
-|---|---|
-| `setup:all` | **Full setup** — runs all 7 data/model/embedding/whisper phases (idempotent; pass `--force` to re-run) |
-| `setup:windows` | Windows bootstrap — installs LLVM + CMake via `winget` and persists `LIBCLANG_PATH` |
-| `dev` | Start Vite dev server |
-| `build` | TypeScript check + Vite production build |
-| `tauri` | Run Tauri CLI commands |
-| `test` | Run Vitest tests |
-| `lint` | ESLint |
-| `format` | Prettier formatting |
-| `typecheck` | TypeScript type checking |
-| `preview` | Preview production build |
-| `download:bible-data` | Download bundled Bible translation archive + cross-references |
-| `build:bible` | Build SQLite Bible database from JSON sources |
-| `download:model` | Export Qwen3-Embedding-0.6B to ONNX + quantize to INT8 |
-| `export:verses` | Export KJV verses to JSON for embedding precomputation |
-| `precompute:embeddings` | Precompute embeddings via Rust ONNX binary (recommended) |
-| `precompute:embeddings-onnx` | Precompute embeddings via Python ONNX Runtime |
-| `precompute:embeddings-py` | Precompute embeddings via Python sentence-transformers (GPU path) |
-| `quantize:model` | Quantize ONNX model to INT8 for ARM64 |
-| `download:whisper` | Download `ggml-large-v3-turbo-q8_0.bin` for local Whisper STT |
-| `download:ndi-sdk` | Download NDI 6 SDK headers and platform libraries |
-| `web:dev`, `web:build`, `web:start`, `web:lint` | Marketing + Fumadocs documentation site under `web/` |
+| Script                                          | Description                                                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `setup:all`                                     | **Full setup** — runs all 7 data/model/embedding/whisper phases (idempotent; pass `--force` to re-run) |
+| `setup:windows`                                 | Windows bootstrap — installs LLVM + CMake via `winget` and persists `LIBCLANG_PATH`                    |
+| `dev`                                           | Start Vite dev server                                                                                  |
+| `build`                                         | TypeScript check + Vite production build                                                               |
+| `tauri`                                         | Run Tauri CLI commands                                                                                 |
+| `test`                                          | Run Vitest tests                                                                                       |
+| `lint`                                          | ESLint                                                                                                 |
+| `format`                                        | Prettier formatting                                                                                    |
+| `typecheck`                                     | TypeScript type checking                                                                               |
+| `preview`                                       | Preview production build                                                                               |
+| `download:bible-data`                           | Download bundled Bible translation archive + cross-references                                          |
+| `build:bible`                                   | Build SQLite Bible database from JSON sources                                                          |
+| `download:model`                                | Export Qwen3-Embedding-0.6B to ONNX + quantize to INT8                                                 |
+| `export:verses`                                 | Export KJV verses to JSON for embedding precomputation                                                 |
+| `precompute:embeddings`                         | Precompute embeddings via Rust ONNX binary (recommended)                                               |
+| `precompute:embeddings-onnx`                    | Precompute embeddings via Python ONNX Runtime                                                          |
+| `precompute:embeddings-py`                      | Precompute embeddings via Python sentence-transformers (GPU path)                                      |
+| `quantize:model`                                | Quantize ONNX model to INT8 for ARM64                                                                  |
+| `download:whisper`                              | Download `ggml-large-v3-turbo-q8_0.bin` for local Whisper STT                                          |
+| `download:ndi-sdk`                              | Download NDI 6 SDK headers and platform libraries                                                      |
+| `web:dev`, `web:build`, `web:start`, `web:lint` | Marketing + Fumadocs documentation site under `web/`                                                   |
 
 ## Security
 
@@ -320,6 +324,6 @@ Rhema enforces a restrictive Content Security Policy on the Tauri webview to pre
 
 Create a `.env` file in the project root (optional):
 
-| Variable | Required | Description |
-|---|---|---|
+| Variable           | Required | Description                                                       |
+| ------------------ | -------- | ----------------------------------------------------------------- |
 | `DEEPGRAM_API_KEY` | Optional | API key for Deepgram speech-to-text (not needed if using Whisper) |
