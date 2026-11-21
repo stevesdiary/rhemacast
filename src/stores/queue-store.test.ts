@@ -17,7 +17,10 @@ function makeVerse(overrides: Partial<Verse> = {}): Verse {
   }
 }
 
-function makeItem(overrides: Partial<VerseQueueItem> = {}, verse: Partial<Verse> = {}): VerseQueueItem {
+function makeItem(
+  overrides: Partial<VerseQueueItem> = {},
+  verse: Partial<Verse> = {}
+): VerseQueueItem {
   return {
     id: "item-1",
     type: "verse",
@@ -60,20 +63,33 @@ describe("addItem", () => {
     useQueueStore.getState().addItem(makeItem({ id: "a" }, { text: "" }))
     useQueueStore
       .getState()
-      .addItem(makeItem({ id: "b", added_at: 99 }, { text: "For God so loved the world" }))
+      .addItem(
+        makeItem(
+          { id: "b", added_at: 99 },
+          { text: "For God so loved the world" }
+        )
+      )
 
     const items = useQueueStore.getState().items
     expect(items).toHaveLength(1)
     expect(items[0].id).toBe("a")
     expect(items[0].added_at).toBe(0)
-    expect(getVerseText(items[0] as VerseQueueItem)).toBe("For God so loved the world")
+    expect(getVerseText(items[0] as VerseQueueItem)).toBe(
+      "For God so loved the world"
+    )
   })
 
   it("does not overwrite existing text on a duplicate", () => {
-    useQueueStore.getState().addItem(makeItem({ id: "a" }, { text: "original text" }))
-    useQueueStore.getState().addItem(makeItem({ id: "b" }, { text: "different text" }))
+    useQueueStore
+      .getState()
+      .addItem(makeItem({ id: "a" }, { text: "original text" }))
+    useQueueStore
+      .getState()
+      .addItem(makeItem({ id: "b" }, { text: "different text" }))
 
-    expect(getVerseText(useQueueStore.getState().items[0] as VerseQueueItem)).toBe("original text")
+    expect(
+      getVerseText(useQueueStore.getState().items[0] as VerseQueueItem)
+    ).toBe("original text")
   })
 })
 
@@ -82,16 +98,20 @@ describe("backfillText", () => {
     useQueueStore.getState().addItem(makeItem({ id: "a" }, { text: "" }))
     useQueueStore.getState().backfillText("a", "For God so loved the world")
 
-    expect(getVerseText(useQueueStore.getState().items[0] as VerseQueueItem)).toBe(
-      "For God so loved the world",
-    )
+    expect(
+      getVerseText(useQueueStore.getState().items[0] as VerseQueueItem)
+    ).toBe("For God so loved the world")
   })
 
   it("never overwrites non-empty text", () => {
-    useQueueStore.getState().addItem(makeItem({ id: "a" }, { text: "original text" }))
+    useQueueStore
+      .getState()
+      .addItem(makeItem({ id: "a" }, { text: "original text" }))
     useQueueStore.getState().backfillText("a", "different text")
 
-    expect(getVerseText(useQueueStore.getState().items[0] as VerseQueueItem)).toBe("original text")
+    expect(
+      getVerseText(useQueueStore.getState().items[0] as VerseQueueItem)
+    ).toBe("original text")
   })
 
   it("ignores unknown ids and empty text", () => {
@@ -99,6 +119,8 @@ describe("backfillText", () => {
     useQueueStore.getState().backfillText("missing", "text")
     useQueueStore.getState().backfillText("a", "")
 
-    expect(getVerseText(useQueueStore.getState().items[0] as VerseQueueItem)).toBe("")
+    expect(
+      getVerseText(useQueueStore.getState().items[0] as VerseQueueItem)
+    ).toBe("")
   })
 })

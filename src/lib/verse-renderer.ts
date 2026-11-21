@@ -808,7 +808,10 @@ function buildScaledTheme(
     background: {
       ...theme.background,
       image: theme.background.image
-        ? { ...theme.background.image, blur: theme.background.image.blur * scale }
+        ? {
+            ...theme.background.image,
+            blur: theme.background.image.blur * scale,
+          }
         : null,
     },
     verseText: {
@@ -877,6 +880,9 @@ function calculateMaxAvailableVerseHeight(
   textRect: VerseLayoutRect,
   referenceHeight: number
 ): number {
+  if (referenceHeight <= 0) {
+    return textRect.height
+  }
   const referenceGap = Math.max(
     0,
     // 0.5 x fontSize scales naturally with different themes
@@ -894,15 +900,15 @@ function calculateMaxAvailableVerseHeight(
   }
 }
 
-/** 
+/**
  * Returns the largest verse font size that fits within the available height without overflowing, using binary search.
- * 
- * @param ctx 
- * @param theme 
- * @param verse 
- * @param textRectWidth 
- * @param maxHeight 
- * @returns 
+ *
+ * @param ctx
+ * @param theme
+ * @param verse
+ * @param textRectWidth
+ * @param maxHeight
+ * @returns
  */
 function calculateScaledFontSize(
   ctx: CanvasRenderingContext2D,
@@ -960,7 +966,10 @@ export function measureVerseHeight(
   if (!handle) {
     return { height: lineHeightPx, maxLineWidth: 1 }
   }
-  const stats = measureRichInlineStats(handle.prepared, Math.max(1, textRectWidth))
+  const stats = measureRichInlineStats(
+    handle.prepared,
+    Math.max(1, textRectWidth)
+  )
   const maxLineWidth =
     verseAlign === "justify" && stats.lineCount > 1
       ? textRectWidth
@@ -1045,13 +1054,23 @@ export function computeVerseLayoutMetrics(
   // Text area is anchored within the background region (offsets are already
   // applied to the region itself). At 100% × 100% this matches anchoring to
   // the canvas directly.
-  const innerPos = anchorPosition(layout.anchor, textAreaW, textAreaH, bgW, bgH, 0, 0)
+  const innerPos = anchorPosition(
+    layout.anchor,
+    textAreaW,
+    textAreaH,
+    bgW,
+    bgH,
+    0,
+    0
+  )
   const pos = { x: bgPos.x + innerPos.x, y: bgPos.y + innerPos.y }
 
   const pad = layout.padding
   // The container's own padding insets the text too, so content wraps inside
   // the surface rather than running to its edges.
-  const surfacePad = scaledTheme.textBox.enabled ? scaledTheme.textBox.padding : 0
+  const surfacePad = scaledTheme.textBox.enabled
+    ? scaledTheme.textBox.padding
+    : 0
   const textRectX = pos.x + pad.left + surfacePad
   const textRectY = pos.y + pad.top + surfacePad
   const textRectW = textAreaW - pad.left - pad.right - surfacePad * 2
@@ -1096,7 +1115,12 @@ export function computeVerseLayoutMetrics(
     }
   }
 
-  const referenceHeight = scaledTheme.reference.fontSize * 1.5
+  const hasReference = Boolean(
+    verse.reference && verse.reference.trim().length > 0
+  )
+  const referenceHeight = hasReference
+    ? scaledTheme.reference.fontSize * 1.5
+    : 0
   const verseAlign = resolveHorizontalAlign(
     scaledTheme.verseText.horizontalAlign,
     scaledTheme.layout.textAlign,
@@ -1108,13 +1132,16 @@ export function computeVerseLayoutMetrics(
     false
   )
 
-  const refText = applyTextTransform(
-    scaledTheme.reference.uppercase
-      ? verse.reference.toUpperCase()
-      : verse.reference,
-    resolveTextTransform(scaledTheme.reference.textTransform)
-  )
+  const refText = hasReference
+    ? applyTextTransform(
+        scaledTheme.reference.uppercase
+          ? verse.reference.toUpperCase()
+          : verse.reference,
+        resolveTextTransform(scaledTheme.reference.textTransform)
+      )
+    : ""
   const measureReferenceWidth = (maxWidth: number) => {
+    if (!hasReference) return 0
     ctx.save()
     ctx.font = `${scaledTheme.reference.fontWeight} ${scaledTheme.reference.fontSize}px "${scaledTheme.reference.fontFamily}", sans-serif`
     const width = Math.max(
@@ -1170,25 +1197,29 @@ export function computeVerseLayoutMetrics(
       verseContentRect!
     )
 
-    const referenceWidth = measureReferenceWidth(referenceContentRect!.width)
+    const referenceWidth = hasReference
+      ? measureReferenceWidth(referenceContentRect!.width)
+      : 0
     const refY = alignY(
       resolveVerticalAlign(scaledTheme.reference.verticalAlign),
       referenceContentRect!.y,
       referenceContentRect!.height,
       referenceHeight
     )
-    const referenceRect = rectForAlignedText(
-      referenceAlign === "justify" ? "left" : referenceAlign,
-      alignX(
-        referenceAlign === "justify" ? "left" : referenceAlign,
-        referenceContentRect!.x,
-        referenceContentRect!.width
-      ),
-      refY,
-      referenceWidth,
-      referenceHeight,
-      referenceContentRect!
-    )
+    const referenceRect = hasReference
+      ? rectForAlignedText(
+          referenceAlign === "justify" ? "left" : referenceAlign,
+          alignX(
+            referenceAlign === "justify" ? "left" : referenceAlign,
+            referenceContentRect!.x,
+            referenceContentRect!.width
+          ),
+          refY,
+          referenceWidth,
+          referenceHeight,
+          referenceContentRect!
+        )
+      : null
 
     return {
       scaledTheme,
@@ -1202,11 +1233,13 @@ export function computeVerseLayoutMetrics(
       referenceBoxRect,
       verseBoxRect,
       // In free mode each element owns a box, so its plate fills that box.
-      referenceSurfaceRect: surfaceRectFor(
-        scaledTheme.reference.surface,
-        referenceRect,
-        referenceBoxRect
-      ),
+      referenceSurfaceRect: hasReference
+        ? surfaceRectFor(
+            scaledTheme.reference.surface,
+            referenceRect,
+            referenceBoxRect
+          )
+        : null,
       verseSurfaceRect: surfaceRectFor(
         scaledTheme.verseText.surface,
         verseRect,
@@ -1253,12 +1286,13 @@ export function computeVerseLayoutMetrics(
   )
   const referenceWidth = measureReferenceWidth(textRectW)
 
-  const blockHeight =
-    scaledTheme.reference.position === "above"
+  const blockHeight = hasReference
+    ? scaledTheme.reference.position === "above"
       ? referenceHeight + verseHeight
       : scaledTheme.reference.position === "below"
         ? verseHeight + referenceGap + referenceHeight
         : verseHeight + referenceHeight
+    : verseHeight
   const blockStartY = alignY(
     blockVerticalAlign,
     textRectY,
@@ -1266,9 +1300,19 @@ export function computeVerseLayoutMetrics(
     blockHeight
   )
 
-  let referenceRect: VerseLayoutRect
+  let referenceRect: VerseLayoutRect | null = null
   let verseRect: VerseLayoutRect
-  if (scaledTheme.reference.position === "above") {
+  if (!hasReference) {
+    const verseY = blockStartY
+    verseRect = rectForAlignedText(
+      verseAlign === "justify" ? "left" : verseAlign,
+      verseDrawX,
+      verseY,
+      verseMetrics.maxLineWidth,
+      verseHeight,
+      textRect
+    )
+  } else if (scaledTheme.reference.position === "above") {
     const refY = blockStartY
     const verseY = blockStartY + referenceHeight
     referenceRect = rectForAlignedText(
@@ -1339,11 +1383,9 @@ export function computeVerseLayoutMetrics(
     referenceBoxRect: null,
     verseBoxRect: null,
     // Stacked mode has no per-element boxes, so each plate hugs its own text.
-    referenceSurfaceRect: surfaceRectFor(
-      scaledTheme.reference.surface,
-      referenceRect,
-      null
-    ),
+    referenceSurfaceRect: hasReference
+      ? surfaceRectFor(scaledTheme.reference.surface, referenceRect, null)
+      : null,
     verseSurfaceRect: surfaceRectFor(
       scaledTheme.verseText.surface,
       verseRect,
@@ -1435,7 +1477,7 @@ function renderVerseImpl(
       metrics.fittedVerseFontSize
     )
   }
-  if (referenceRect) {
+  if (referenceRect && verse.reference.trim().length > 0) {
     drawReference(
       ctx,
       scaledTheme,

@@ -1,6 +1,11 @@
 import { create } from "zustand"
-import type { QueueItem, VerseQueueItem } from "@/types"
-import { isVerseQueueItem } from "@/types"
+import type {
+  QueueItem,
+  VerseQueueItem,
+  SongQueueItem,
+  SongWithSections,
+} from "@/types"
+import { isVerseQueueItem, isSongQueueItem } from "@/types"
 
 interface QueueState {
   items: QueueItem[]
@@ -13,6 +18,7 @@ interface QueueState {
   reorderItems: (fromIndex: number, toIndex: number) => void
   setActive: (index: number | null) => void
   clearQueue: () => void
+  setItems: (items: QueueItem[]) => void
   /** Flash-highlight a queue item briefly (1.5 s). */
   flashItem: (id: string) => void
   /** Find an existing verse item by book+chapter+verse. Returns its index or -1. */
@@ -20,7 +26,21 @@ interface QueueState {
   /** Fill in verse text on an item that was queued without it. Never overwrites non-empty text. */
   backfillText: (id: string, text: string) => void
   /** Update a chapter-only queue item in place when the verse is refined. */
-  updateEarlyRef: (bookNumber: number, chapter: number, verse: number, reference: string, verseText: string) => boolean
+  updateEarlyRef: (
+    bookNumber: number,
+    chapter: number,
+    verse: number,
+    reference: string,
+    verseText: string
+  ) => boolean
+  /** Update song and sections in schedule when edited */
+  updateSongInQueue: (updated: SongWithSections) => void
+  /** Update lyrics for a specific song section in schedule */
+  updateSongSectionLyrics: (
+    songId: number,
+    sectionId: number,
+    newLyrics: string
+  ) => void
 }
 
 let flashTimer: ReturnType<typeof setTimeout> | null = null
@@ -29,7 +49,11 @@ function verseKey(item: VerseQueueItem): string {
   return `${item.verse.book_number}:${item.verse.chapter}:${item.verse.verse}`
 }
 
-function verseKeyFromValues(bookNumber: number, chapter: number, verse: number): string {
+function verseKeyFromValues(
+  bookNumber: number,
+  chapter: number,
+  verse: number
+): string {
   return `${bookNumber}:${chapter}:${verse}`
 }
 
@@ -42,12 +66,17 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     set((state) => {
       if (isVerseQueueItem(item)) {
         const key = verseKey(item)
-        const idx = state.items.findIndex((i): i is VerseQueueItem => isVerseQueueItem(i) && verseKey(i) === key)
+        const idx = state.items.findIndex(
+          (i): i is VerseQueueItem => isVerseQueueItem(i) && verseKey(i) === key
+        )
         if (idx !== -1) {
           const existing = state.items[idx] as VerseQueueItem
           if (!existing.verse.text && item.verse.text) {
             const items = [...state.items]
-            items[idx] = { ...existing, verse: { ...existing.verse, text: item.verse.text } }
+            items[idx] = {
+              ...existing,
+              verse: { ...existing.verse, text: item.verse.text },
+            }
             return { items }
           }
           return state
@@ -68,6 +97,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     }),
   setActive: (activeIndex) => set({ activeIndex }),
   clearQueue: () => set({ items: [], activeIndex: null }),
+  setItems: (items) => set({ items, activeIndex: items.length > 0 ? 0 : null }),
   flashItem: (id) => {
     if (flashTimer) clearTimeout(flashTimer)
     set({ highlightedId: id })
@@ -75,7 +105,9 @@ export const useQueueStore = create<QueueState>((set, get) => ({
   },
   findDuplicate: (bookNumber, chapter, verse) =>
     get().items.findIndex(
-      (i): i is VerseQueueItem => isVerseQueueItem(i) && verseKeyFromValues(bookNumber, chapter, verse) === verseKey(i)
+      (i): i is VerseQueueItem =>
+        isVerseQueueItem(i) &&
+        verseKeyFromValues(bookNumber, chapter, verse) === verseKey(i)
     ),
   backfillText: (id, text) =>
     set((state) => {
@@ -95,14 +127,14 @@ export const useQueueStore = create<QueueState>((set, get) => ({
           isVerseQueueItem(i) &&
           !!i.is_chapter_only &&
           i.verse.book_number === bookNumber &&
-          i.verse.chapter === chapter,
+          i.verse.chapter === chapter
       )
       if (idx === -1) {
         idx = state.items.findIndex(
           (i): i is VerseQueueItem =>
             isVerseQueueItem(i) &&
             !!i.is_chapter_only &&
-            i.verse.book_number === bookNumber,
+            i.verse.book_number === bookNumber
         )
       }
       if (idx === -1) return state
@@ -118,4 +150,50 @@ export const useQueueStore = create<QueueState>((set, get) => ({
     })
     return found
   },
+  updateSongInQueue: (updated) =>
+    set((state) => {
+      let changed = false
+      const items = state.items.map((i) => {
+        if (isSongQueueItem(i) && i.song.song.id === updated.song.id) {
+          changed = true
+          const matchingSection = i.section
+            ? (updated.sections.find((s) => s.id === i.section?.id) ??
+              i.section)
+            : null
+          return {
+            ...i,
+            song: updated,
+            section: matchingSection,
+          }
+        }
+        return i
+      })
+      return changed ? { items } : state
+    }),
+  updateSongSectionLyrics: (songId, sectionId, newLyrics) =>
+    set((state) => {
+      let changed = false
+      const items = state.items.map((i) => {
+        if (isSongQueueItem(i) && i.song.song.id === songId) {
+          changed = true
+          const updatedSections = i.song.sections.map((sec) =>
+            sec.id === sectionId ? { ...sec, lyrics: newLyrics } : sec
+          )
+          const updatedSong: SongWithSections = {
+            ...i.song,
+            sections: updatedSections,
+          }
+          const matchingSection = i.section
+            ? (updatedSections.find((s) => s.id === sectionId) ?? i.section)
+            : null
+          return {
+            ...i,
+            song: updatedSong,
+            section: matchingSection,
+          }
+        }
+        return i
+      })
+      return changed ? { items } : state
+    }),
 }))

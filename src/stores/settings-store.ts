@@ -14,6 +14,8 @@ interface SettingsState {
   cooldownMs: number
   onboardingComplete: boolean
   sttProvider: SttProvider
+  songDisplayMode: "line" | "stanza"
+  showSongTitleOnLive: boolean
 
   setDeepgramApiKey: (key: string | null) => void
   setOpenaiApiKey: (key: string | null) => void
@@ -25,6 +27,8 @@ interface SettingsState {
   setCooldownMs: (ms: number) => void
   setOnboardingComplete: (complete: boolean) => void
   setSttProvider: (provider: SttProvider) => void
+  setSongDisplayMode: (mode: "line" | "stanza") => void
+  setShowSongTitleOnLive: (show: boolean) => void
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -38,6 +42,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   cooldownMs: 2500,
   onboardingComplete: false,
   sttProvider: "deepgram",
+  songDisplayMode: "line",
+  showSongTitleOnLive: false,
 
   setDeepgramApiKey: (deepgramApiKey) => set({ deepgramApiKey }),
   setOpenaiApiKey: (openaiApiKey) => set({ openaiApiKey }),
@@ -49,6 +55,8 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   setCooldownMs: (cooldownMs) => set({ cooldownMs }),
   setOnboardingComplete: (onboardingComplete) => set({ onboardingComplete }),
   setSttProvider: (sttProvider) => set({ sttProvider }),
+  setSongDisplayMode: (songDisplayMode) => set({ songDisplayMode }),
+  setShowSongTitleOnLive: (showSongTitleOnLive) => set({ showSongTitleOnLive }),
 }))
 
 const PERSISTED_KEYS = [
@@ -62,6 +70,8 @@ const PERSISTED_KEYS = [
   "cooldownMs",
   "onboardingComplete",
   "sttProvider",
+  "songDisplayMode",
+  "showSongTitleOnLive",
 ] as const satisfies readonly (keyof SettingsState)[]
 
 let tauriStore: Store | null = null

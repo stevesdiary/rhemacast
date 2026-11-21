@@ -69,7 +69,7 @@ describe("presentVerse", () => {
     await presentVerse(staleVerse)
 
     expect(useBibleStore.getState().selectedVerse?.text).toBe(
-      "For God so loved the world",
+      "For God so loved the world"
     )
     const liveVerse = useBroadcastStore.getState().liveVerse
     expect(liveVerse?.reference).toBe("John 3:16 (NKJV)")
@@ -96,7 +96,7 @@ describe("presentVerse", () => {
 
     expect(useBibleStore.getState().selectedVerse).toEqual(sampleVerse)
     expect(useBroadcastStore.getState().liveVerse?.segments[0].text).toBe(
-      sampleVerse.text,
+      sampleVerse.text
     )
   })
 
@@ -107,12 +107,17 @@ describe("presentVerse", () => {
 
     expect(useBibleStore.getState().selectedVerse).toEqual(sampleVerse)
     expect(useBroadcastStore.getState().liveVerse?.segments[0].text).toBe(
-      sampleVerse.text,
+      sampleVerse.text
     )
   })
 
   it("records the presented verse as the live source verse", async () => {
-    const fullVerse: Verse = { ...staleVerse, id: 26137, translation_id: 2, text: "For God so loved the world" }
+    const fullVerse: Verse = {
+      ...staleVerse,
+      id: 26137,
+      translation_id: 2,
+      text: "For God so loved the world",
+    }
     mockInvoke.mockResolvedValue(fullVerse)
 
     await presentVerse(staleVerse)
@@ -132,7 +137,12 @@ describe("presentVerse", () => {
   })
 
   it("refuses to replace the live verse with an empty one", async () => {
-    const fullVerse: Verse = { ...staleVerse, id: 26137, translation_id: 2, text: "For God so loved the world" }
+    const fullVerse: Verse = {
+      ...staleVerse,
+      id: 26137,
+      translation_id: 2,
+      text: "For God so loved the world",
+    }
     // Route by command — mark() also calls invoke ("ui_mark"), so Once
     // queues would be consumed by instrumentation.
     let lookups = 0
@@ -146,7 +156,7 @@ describe("presentVerse", () => {
     await presentVerse({ ...sampleVerse, text: "" })
 
     expect(useBroadcastStore.getState().liveVerse?.reference).toBe(
-      "John 3:16 (NKJV)",
+      "John 3:16 (NKJV)"
     )
   })
 
@@ -155,7 +165,7 @@ describe("presentVerse", () => {
     let resolveOlder: (v: Verse) => void = () => {}
     mockInvoke
       .mockImplementationOnce(
-        () => new Promise<Verse>((resolve) => (resolveOlder = resolve)),
+        () => new Promise<Verse>((resolve) => (resolveOlder = resolve))
       )
       .mockResolvedValueOnce(sampleVerse)
 
@@ -165,7 +175,7 @@ describe("presentVerse", () => {
     await first
 
     expect(useBroadcastStore.getState().liveVerse?.reference).toBe(
-      "Genesis 1:2 (NKJV)",
+      "Genesis 1:2 (NKJV)"
     )
   })
 })
