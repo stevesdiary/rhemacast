@@ -58,7 +58,14 @@ impl HnswVectorIndex {
             ));
         }
 
-        let embeddings: Vec<f32> = bytemuck::cast_slice(&emb_bytes).to_vec();
+        // Use a properly aligned buffer to avoid bytemuck alignment issues
+        let num_floats = emb_bytes.len() / std::mem::size_of::<f32>();
+        let mut embeddings = Vec::<f32>::with_capacity(num_floats);
+        // SAFETY: We just checked the length is a multiple of 4, and f32 is 4 bytes
+        // The file data is just raw bytes which we interpret as f32
+        for chunk in emb_bytes.chunks_exact(std::mem::size_of::<f32>()) {
+            embeddings.push(f32::from_ne_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]));
+        }
         let num_vectors = embeddings.len() / dim;
 
         if !embeddings.len().is_multiple_of(dim) {
@@ -80,7 +87,15 @@ impl HnswVectorIndex {
             ));
         }
 
-        let verse_ids: Vec<i64> = bytemuck::cast_slice(&ids_bytes).to_vec();
+        // Use a properly aligned buffer to avoid bytemuck alignment issues
+        let num_ids = ids_bytes.len() / std::mem::size_of::<i64>();
+        let mut verse_ids = Vec::<i64>::with_capacity(num_ids);
+        for chunk in ids_bytes.chunks_exact(std::mem::size_of::<i64>()) {
+            verse_ids.push(i64::from_ne_bytes([
+                chunk[0], chunk[1], chunk[2], chunk[3],
+                chunk[4], chunk[5], chunk[6], chunk[7],
+            ]));
+        }
 
         if verse_ids.len() != num_vectors {
             return Err(DetectionError::Internal(format!(

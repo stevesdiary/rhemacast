@@ -3,7 +3,6 @@ import { stepVerse } from "@/hooks/use-bible"
 import { useBibleStore } from "@/stores/bible-store"
 import { useBroadcastStore } from "@/stores/broadcast-store"
 import { useQueueStore } from "@/stores/queue-store"
-import type { VerseQueueItem } from "@/types"
 import { isVerseQueueItem } from "@/types"
 
 /**

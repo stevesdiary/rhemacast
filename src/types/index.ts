@@ -7,6 +7,7 @@ export type {
 export type { Translation, Book, Verse, CrossReference } from "./bible"
 export type {
   QueueItem,
+  QueueItemType,
   VerseQueueItem,
   SongQueueItem,
 } from "./queue"
@@ -35,5 +36,4 @@ export type {
   SongWithSections,
   SearchSongRow,
   SectionType,
-  SongQueueItem,
 } from "./songs"

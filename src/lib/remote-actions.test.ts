@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import type { Verse } from "@/types"
+import type { Verse, VerseQueueItem } from "@/types"
 
 const mockInvoke = vi.fn()
 
@@ -38,13 +38,14 @@ const genesisOneOne: Verse = {
   text: "In the beginning",
 }
 
-function queueItemFor(verse: Verse) {
+function queueItemFor(verse: Verse): VerseQueueItem {
   return {
     id: crypto.randomUUID(),
+    type: "verse",
     verse,
     reference: `${verse.book_name} ${verse.chapter}:${verse.verse}`,
     confidence: 1,
-    source: "manual" as const,
+    source: "manual",
     added_at: Date.now(),
   }
 }
@@ -103,8 +104,11 @@ describe("remoteActions.addToQueue", () => {
     expect(items).toHaveLength(1)
     expect(items[0].reference).toBe("John 3:16")
     expect(items[0].source).toBe("manual")
-    expect(items[0].confidence).toBe(1)
-    expect(items[0].verse).toEqual(johnThreeSixteen)
+    expect(items[0].type).toBe("verse")
+    if (items[0].type === "verse") {
+      expect(items[0].confidence).toBe(1)
+      expect(items[0].verse).toEqual(johnThreeSixteen)
+    }
   })
 
   it("is safe to press twice — the second press adds nothing", () => {

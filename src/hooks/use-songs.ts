@@ -34,12 +34,13 @@ export function selectSection(section: SongSection | null) {
 
 /** Queue a song or section for presentation */
 export function queueSong(
-  song: Song,
+  song: SongWithSections,
   section: SongSection | null,
   reference: string
 ): SongQueueItem {
   const item: SongQueueItem = {
     id: crypto.randomUUID(),
+    type: "song",
     song,
     section,
     reference,
