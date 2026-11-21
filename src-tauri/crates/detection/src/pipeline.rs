@@ -3,7 +3,7 @@ use crate::merger::{DetectionMerger, MergedDetection};
 use crate::semantic::detector::SemanticDetector;
 
 /// Minimum word count for vector embedding search (short text lacks semantic signal).
-const MIN_WORDS_FOR_VECTOR: usize = 5;
+const MIN_WORDS_FOR_VECTOR: usize = 3;
 
 /// The main detection pipeline that runs on each transcript segment.
 ///

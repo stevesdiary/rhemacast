@@ -23,7 +23,7 @@ pub(crate) fn epoch_ms() -> u128 {
 }
 
 /// Truncate a string to at most `max_bytes`, snapping to a valid UTF-8 char boundary.
-fn truncate_safe(s: &str, max_bytes: usize) -> &str {
+pub(crate) fn truncate_safe(s: &str, max_bytes: usize) -> &str {
     if s.len() <= max_bytes {
         return s;
     }
@@ -604,14 +604,14 @@ fn run_direct_detection(app: &AppHandle, transcript: &str) -> bool {
     has_high_confidence
 }
 
-/// Run FTS5-only detection. ONNX/vector pipeline is skipped for speed.
-/// FTS5 phrase match finds exact scripture quotes; direct detection handles
-/// verse references; ONNX can be re-enabled later with parallelized vector search.
+/// Run 3-to-5 word window matching against the Bible database.
+/// Matches exact phrases (5, 4, 3 words) and tight 3-5 word window co-occurrences.
+/// Omits loose single-word OR search to prevent false positives on conversational speech.
 fn run_semantic_detection(app: &AppHandle, transcript: &str) {
     let t0 = std::time::Instant::now();
-    log::info!("[DET-SEMANTIC] Running on: {:?}", truncate_safe(transcript, 80));
+    log::info!("[DET-SEMANTIC] Running 3-5 word matching on: {:?}", truncate_safe(transcript, 80));
 
-    // FTS5 BM25 phrase search (~5ms)
+    // FTS5 3-5 word window search (~2-5ms)
     let fts_results = {
         let managed: State<'_, Mutex<AppState>> = app.state();
         let Ok(app_state) = managed.lock() else {
@@ -619,7 +619,7 @@ fn run_semantic_detection(app: &AppHandle, transcript: &str) {
             return;
         };
         app_state.bible_db.as_ref().and_then(|db| {
-            db.search_verses_bm25(transcript, 10).ok()
+            db.search_verses_for_transcript(transcript, 10).ok()
         })
     };
 
@@ -640,17 +640,16 @@ fn run_semantic_detection(app: &AppHandle, transcript: &str) {
         return;
     };
 
-    use rhema_detection::fusion::{FTS5_RANK0_CONFIDENCE, FTS5_CONFIDENCE_DECAY, FTS5_MIN_CONFIDENCE};
+    use rhema_detection::fusion::{FTS5_CONFIDENCE_DECAY, FTS5_MIN_CONFIDENCE};
 
     let results: Vec<super::detection::DetectionResult> = fts
         .iter()
         .enumerate()
         .filter_map(|(rank, hit)| {
             #[expect(clippy::cast_precision_loss, reason = "rank is small")]
-            let confidence = FTS5_RANK0_CONFIDENCE - (rank as f64 * FTS5_CONFIDENCE_DECAY);
-            if confidence < FTS5_MIN_CONFIDENCE {
-                return None;
-            }
+            let base_confidence = if hit.phrase_match { 0.85 } else { 0.70 };
+            let confidence = (base_confidence - (rank as f64 * FTS5_CONFIDENCE_DECAY))
+                .max(FTS5_MIN_CONFIDENCE);
 
             // Resolve verse text from active translation
             let verse_text = app_state.bible_db.as_ref()

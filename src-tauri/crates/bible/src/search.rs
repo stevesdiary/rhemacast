@@ -292,6 +292,118 @@ impl BibleDb {
         Ok(results)
     }
 
+    /// Search verses matching spoken preacher transcript using 3 to 5 word windows.
+    ///
+    /// Rather than searching for every word across the transcript (which causes
+    /// high false-positive rates with loose OR queries), this method:
+    /// 1. Cleans and tokenizes the preacher's words.
+    /// 2. Requires at least 3 words from the preacher.
+    /// 3. Extracts candidate sliding windows of lengths 5, 4, and 3 words.
+    /// 4. Filters out windows dominated by common stop words.
+    /// 5. Matches exact phrases (5-word, then 4-word, then 3-word).
+    /// 6. Falls back to tight AND matching on 3-5 word windows (all significant words
+    ///    in the window must be present in the verse).
+    /// 7. Excludes loose single-word OR searching to maintain high precision.
+    pub fn search_verses_for_transcript(
+        &self,
+        transcript: &str,
+        limit: usize,
+    ) -> Result<Vec<Bm25Result>, BibleError> {
+        let conn = self.conn.lock().map_err(|e| BibleError::Internal(e.to_string()))?;
+        let fetch_limit = limit * 4;
+
+        let tokens: Vec<String> = transcript
+            .split_whitespace()
+            .map(clean_word)
+            .filter(|w| !w.is_empty())
+            .collect();
+
+        if tokens.len() < 3 {
+            return Ok(vec![]);
+        }
+
+        let is_valid_window = |window: &[String]| -> bool {
+            let sig_count = window
+                .iter()
+                .filter(|w| !is_stop_word(w) && w.len() >= 2)
+                .count();
+            sig_count >= 2 || window.iter().any(|w| !is_stop_word(w) && w.len() >= 6)
+        };
+
+        let mut windows_by_size: Vec<(usize, Vec<Vec<String>>)> = Vec::new();
+        for &size in &[5, 4, 3] {
+            if tokens.len() >= size {
+                let mut list = Vec::new();
+                for i in 0..=(tokens.len() - size) {
+                    let window = &tokens[i..i + size];
+                    if is_valid_window(window) {
+                        list.push(window.to_vec());
+                    }
+                }
+                if !list.is_empty() {
+                    windows_by_size.push((size, list));
+                }
+            }
+        }
+
+        let mut all_results = Vec::new();
+
+        // Tier 1: Exact phrase matching on 3-5 word windows (5-word windows first, then 4, then 3)
+        for (_size, windows) in &windows_by_size {
+            if dedup_count(&all_results) >= limit {
+                break;
+            }
+
+            let phrases: Vec<String> = windows
+                .iter()
+                .map(|w| format!("\"{}\"", w.join(" ")))
+                .collect();
+
+            for chunk in phrases.chunks(8) {
+                let fts_q = chunk.join(" OR ");
+                let mut hits = run_fts_query(&conn, &fts_q, fetch_limit)?;
+                for r in &mut hits {
+                    r.phrase_match = true;
+                }
+                all_results.extend(hits);
+                if dedup_count(&all_results) >= limit {
+                    break;
+                }
+            }
+        }
+
+        // Tier 2: Tight AND matching on 3-5 word windows (for slight translation variations)
+        if dedup_count(&all_results) < limit {
+            for (_size, windows) in &windows_by_size {
+                if dedup_count(&all_results) >= limit {
+                    break;
+                }
+                for window in windows {
+                    let sig_words: Vec<String> = window
+                        .iter()
+                        .filter(|w| !is_stop_word(w) && w.len() >= 2)
+                        .cloned()
+                        .collect();
+                    if sig_words.len() >= 3 {
+                        let and_q = sig_words.join(" ");
+                        let hits = run_fts_query(&conn, &and_q, fetch_limit)?;
+                        all_results.extend(hits);
+                        if dedup_count(&all_results) >= limit {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        let results = dedup_results(all_results, limit);
+        log::info!(
+            "[FTS5-TRANSCRIPT] Found {} unique verses for transcript using 3-5 word matching",
+            results.len()
+        );
+        Ok(results)
+    }
+
     pub fn search_books(&self, query: &str) -> Result<Vec<Book>, BibleError> {
         let conn = self.conn.lock().map_err(|e| BibleError::Internal(e.to_string()))?;
         let pattern = format!("{query}%");
@@ -493,5 +605,48 @@ mod tests {
             .map(|r| (r.book_number, r.chapter, r.verse))
             .collect();
         assert_eq!(keys.len(), 2);
+    }
+
+    #[test]
+    fn search_transcript_matches_5_word_quote_in_sentence() {
+        let db = test_db();
+        let transcript = "Now church, remember that for God so loved the world that he gave his Son, let us pray";
+        let results = db.search_verses_for_transcript(transcript, 5).unwrap();
+        assert!(!results.is_empty(), "Expected match for 5-word quote");
+        assert_eq!(
+            (results[0].book_number, results[0].chapter, results[0].verse),
+            (43, 3, 16)
+        );
+        assert!(results[0].phrase_match);
+    }
+
+    #[test]
+    fn search_transcript_excludes_conversational_speech_without_quotes() {
+        let db = test_db();
+        // Conversational speech containing words like "today", "glad", "service"
+        // Under old loose OR search, this would return verses containing those words.
+        // Under 3-5 word window matching, this must return 0 results.
+        let transcript = "Good morning church, we are so glad that everyone could come out today";
+        let results = db.search_verses_for_transcript(transcript, 5).unwrap();
+        assert!(results.is_empty(), "Expected 0 results for non-scripture speech, got {}", results.len());
+    }
+
+    #[test]
+    fn search_transcript_requires_at_least_three_words() {
+        let db = test_db();
+        let results = db.search_verses_for_transcript("God loved", 5).unwrap();
+        assert!(results.is_empty(), "Expected 0 results for 2-word input");
+    }
+
+    #[test]
+    fn search_transcript_matches_3_word_phrase() {
+        let db = test_db();
+        let transcript = "God so loved our people";
+        let results = db.search_verses_for_transcript(transcript, 5).unwrap();
+        assert!(!results.is_empty(), "Expected match for 3-word phrase 'God so loved'");
+        assert_eq!(
+            (results[0].book_number, results[0].chapter, results[0].verse),
+            (43, 3, 16)
+        );
     }
 }

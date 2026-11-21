@@ -101,7 +101,49 @@ pub fn detect_verses(
         pipeline.process(&text)
     };
     let app_state = state.lock().map_err(|e| e.to_string())?;
-    let results: Vec<DetectionResult> = merged.iter().map(|m| to_result(&app_state, m)).collect();
+    let mut results: Vec<DetectionResult> = merged.iter().map(|m| to_result(&app_state, m)).collect();
+
+    // If direct detection and ONNX vector search yielded no hits, try 3-5 word window matching
+    if results.is_empty() {
+        if let Some(db) = app_state.bible_db.as_ref() {
+            if let Ok(hits) = db.search_verses_for_transcript(&text, 5) {
+                use rhema_detection::fusion::{FTS5_CONFIDENCE_DECAY, FTS5_MIN_CONFIDENCE};
+                for (rank, hit) in hits.iter().enumerate() {
+                    #[expect(clippy::cast_precision_loss, reason = "rank is small")]
+                    let base_confidence = if hit.phrase_match { 0.85 } else { 0.70 };
+                    let confidence = (base_confidence - (rank as f64 * FTS5_CONFIDENCE_DECAY))
+                        .max(FTS5_MIN_CONFIDENCE);
+
+                    let verse_text = db
+                        .get_verse(
+                            app_state.active_translation_id,
+                            hit.book_number,
+                            hit.chapter,
+                            hit.verse,
+                        )
+                        .ok()
+                        .flatten()
+                        .map(|v| v.text)
+                        .unwrap_or_default();
+
+                    results.push(DetectionResult {
+                        verse_ref: format!("{} {}:{}", hit.book_name, hit.chapter, hit.verse),
+                        verse_text,
+                        book_name: hit.book_name.clone(),
+                        book_number: hit.book_number,
+                        chapter: hit.chapter,
+                        verse: hit.verse,
+                        confidence,
+                        source: "semantic".to_string(),
+                        auto_queued: false,
+                        transcript_snippet: crate::commands::stt::truncate_safe(&text, 100).to_string(),
+                        is_chapter_only: false,
+                    });
+                }
+            }
+        }
+    }
+
     Ok(results)
 }
 
