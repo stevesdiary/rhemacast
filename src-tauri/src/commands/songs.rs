@@ -4,7 +4,49 @@ use std::sync::Mutex;
 use tauri::State;
 
 use crate::state::AppState;
-use rhema_songs::{SearchSongRow, Song, SongWithSections};
+use rhema_songs::{SearchSongRow, Song, SongSection, SongWithSections};
+
+#[tauri::command]
+pub fn create_song(
+    state: State<'_, Mutex<AppState>>,
+    song: Song,
+    sections: Vec<SongSection>,
+) -> Result<SongWithSections, String> {
+    let app_state = state.lock().map_err(|e| e.to_string())?;
+    let db = app_state
+        .songs_db
+        .as_ref()
+        .ok_or_else(|| "Songs database not loaded".to_string())?;
+    db.create_song(&song, &sections).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_song(
+    state: State<'_, Mutex<AppState>>,
+    song: Song,
+    sections: Vec<SongSection>,
+) -> Result<SongWithSections, String> {
+    let app_state = state.lock().map_err(|e| e.to_string())?;
+    let db = app_state
+        .songs_db
+        .as_ref()
+        .ok_or_else(|| "Songs database not loaded".to_string())?;
+    db.update_song(&song, &sections).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_section_lyrics(
+    state: State<'_, Mutex<AppState>>,
+    section_id: i64,
+    lyrics: String,
+) -> Result<(), String> {
+    let app_state = state.lock().map_err(|e| e.to_string())?;
+    let db = app_state
+        .songs_db
+        .as_ref()
+        .ok_or_else(|| "Songs database not loaded".to_string())?;
+    db.update_section_lyrics(section_id, &lyrics).map_err(|e| e.to_string())
+}
 
 #[tauri::command]
 pub fn list_songs(

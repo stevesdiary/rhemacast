@@ -1,62 +1,115 @@
 import { useState, useCallback, useRef, useEffect } from "react"
-import { MusicIcon, SearchIcon, ChevronDownIcon, ChevronRightIcon, PlusIcon } from "lucide-react"
+import {
+  MusicIcon,
+  SearchIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  PlusIcon,
+  XIcon,
+  PencilIcon,
+} from "lucide-react"
+import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useQueueStore } from "@/stores"
-import { useSongsStore } from "@/stores/songs-store"
-import { searchSongs, searchSongsByTitle, fetchSong } from "@/hooks/use-songs"
-import { loadSongs } from "@/stores/songs-store"
-import type { Song, SearchSongRow, SongWithSections, SongSection } from "@/types"
-
-type SearchTab = "title" | "lyrics"
+import { useSongsStore, loadSongs, searchSongs } from "@/stores/songs-store"
+import { fetchSong } from "@/hooks/use-songs"
+import { previewSongSlide, presentSongSlide } from "@/hooks/use-broadcast"
+import { CreateSongDialog } from "@/components/songs/create-song-dialog"
+import { EditSongDialog } from "@/components/songs/edit-song-dialog"
+import type {
+  Song,
+  SearchSongRow,
+  SongWithSections,
+  SongSection,
+} from "@/types"
 
 function sectionLabel(type: string, num: number): string {
   const t = type.charAt(0).toUpperCase() + type.slice(1).replace("_", " ")
   return `${t} ${num}`
 }
 
-function LyricSnippet({ lyrics, query }: { lyrics: string; query: string }) {
-  if (!query || query.length < 2) return <span className="line-clamp-2">{lyrics}</span>
+function HighlightedText({
+  text,
+  query,
+  markClassName,
+}: {
+  text: string
+  query: string
+  markClassName?: string
+}) {
+  if (!query || query.trim().length < 2) {
+    return <>{text}</>
+  }
 
-  const words = new Set(query.toLowerCase().split(/\s+/).filter((w) => w.length >= 2))
-  const parts = lyrics.split(/([\s]+)/)
+  const tokens = query
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w.length >= 2)
+    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+
+  if (tokens.length === 0) {
+    return <>{text}</>
+  }
+
+  const regex = new RegExp(`(${tokens.join("|")})`, "gi")
+  const parts = text.split(regex)
+  const tokenSet = new Set(tokens.map((t) => t.toLowerCase()))
+
   return (
-    <span className="line-clamp-2">
+    <>
       {parts.map((part, i) => {
-        const clean = part.toLowerCase().replace(/[^a-z']/g, "")
-        if (clean.length >= 2 && words.has(clean)) {
+        if (tokenSet.has(part.toLowerCase())) {
           return (
-            <mark key={i} className="rounded-[2px] bg-emerald-800/90 px-0.5 text-foreground">
+            <mark
+              key={i}
+              className={cn(
+                "rounded-[2px] bg-lime-500/25 px-0.5 font-semibold text-foreground",
+                markClassName
+              )}
+            >
               {part}
             </mark>
           )
         }
         return <span key={i}>{part}</span>
       })}
-    </span>
+    </>
   )
 }
 
 function SongSectionRow({
   section,
+  fullSong,
   onQueue,
 }: {
   section: SongSection
+  fullSong: SongWithSections
   onQueue: (section: SongSection) => void
 }) {
   return (
-    <div className="group flex items-start gap-2 rounded-md px-2 py-1.5 hover:bg-muted/40">
-      <span className="mt-0.5 min-w-[72px] text-[0.6rem] font-medium uppercase tracking-wider text-muted-foreground">
+    <div
+      className="group flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/40"
+      onClick={() => {
+        previewSongSlide(fullSong, section)
+      }}
+      onDoubleClick={() => {
+        presentSongSlide(fullSong, section)
+      }}
+      title="Click to preview slide • Double-click to present live"
+    >
+      <span className="mt-0.5 min-w-[72px] text-[0.6rem] font-medium tracking-wider text-muted-foreground uppercase">
         {sectionLabel(section.section_type as string, section.section_number)}
       </span>
-      <p className="flex-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
+      <p className="line-clamp-2 flex-1 text-xs leading-relaxed text-muted-foreground group-hover:text-foreground">
         {section.lyrics}
       </p>
       <Button
         variant="ghost"
         size="icon-xs"
-        className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity bg-primary/40! text-primary-foreground hover:bg-primary!"
+        className="shrink-0 bg-primary/40! text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-primary!"
+        title="Add section to Schedule"
         onClick={(e) => {
           e.stopPropagation()
           onQueue(section)
@@ -72,10 +125,12 @@ function SongRow({
   song,
   query,
   matchedSection,
+  onEditSong,
 }: {
   song: Song
   query: string
   matchedSection?: { type: string; num: number; lyrics: string }
+  onEditSong: (song: SongWithSections) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [fullSong, setFullSong] = useState<SongWithSections | null>(null)
@@ -94,14 +149,18 @@ function SongRow({
   const handleQueueSection = useCallback(
     (section: SongSection) => {
       if (!fullSong) return
+      const ref = `${song.title} — ${sectionLabel(section.section_type as string, section.section_number)}`
       useQueueStore.getState().addItem({
         id: crypto.randomUUID(),
         type: "song",
         song: fullSong,
         section,
-        reference: `${song.title} — ${sectionLabel(section.section_type as string, section.section_number)}`,
+        reference: ref,
         added_at: Date.now(),
         source: "manual",
+      })
+      toast.success("Added to Schedule", {
+        description: ref,
       })
     },
     [fullSong, song.title]
@@ -123,10 +182,26 @@ function SongRow({
       added_at: Date.now(),
       source: "manual",
     })
+    toast.success("Added to Schedule", {
+      description: `${song.title} (${data.sections.length} sections)`,
+    })
   }, [fullSong, song.id, song.title])
 
+  const handleEditClick = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation()
+      let data = fullSong
+      if (!data) {
+        data = await fetchSong(song.id).catch(() => null)
+        if (data) setFullSong(data)
+      }
+      if (data) onEditSong(data)
+    },
+    [fullSong, onEditSong, song.id]
+  )
+
   return (
-    <div className="rounded-lg border border-transparent hover:border-border transition-colors">
+    <div className="rounded-lg border border-transparent transition-colors hover:border-border">
       <div
         className="group flex cursor-pointer items-center gap-2 px-3 py-2"
         onClick={handleExpand}
@@ -137,44 +212,72 @@ function SongRow({
           <ChevronRightIcon className="size-3 shrink-0 text-muted-foreground" />
         )}
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-sm font-medium text-foreground">{song.title}</span>
+          <span className="truncate text-sm font-medium text-foreground">
+            <HighlightedText
+              text={song.title}
+              query={query}
+              markClassName="bg-lime-500/30 text-foreground"
+            />
+          </span>
           {song.author && (
-            <span className="truncate text-[0.6rem] text-muted-foreground">{song.author}</span>
+            <span className="truncate text-[0.6rem] text-muted-foreground">
+              {song.author}
+            </span>
           )}
           {matchedSection && !expanded && (
-            <p className="mt-0.5 text-[0.6rem] text-muted-foreground">
-              <span className="font-medium text-lime-500/80">
+            <p className="mt-0.5 line-clamp-2 text-[0.68rem] leading-relaxed text-muted-foreground">
+              <span className="font-semibold text-lime-400">
                 {sectionLabel(matchedSection.type, matchedSection.num)}:
               </span>{" "}
-              <LyricSnippet lyrics={matchedSection.lyrics} query={query} />
+              <HighlightedText
+                text={matchedSection.lyrics}
+                query={query}
+                markClassName="bg-emerald-800/90 text-foreground"
+              />
             </p>
           )}
         </div>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity bg-primary/40! text-primary-foreground hover:bg-primary!"
-          onClick={(e) => {
-            e.stopPropagation()
-            void handleQueueAll()
-          }}
-        >
-          <PlusIcon className="size-3" />
-        </Button>
+        <div className="flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className="shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground"
+            title="Edit song lyrics & details"
+            onClick={handleEditClick}
+          >
+            <PencilIcon className="size-3 text-lime-400" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className="shrink-0 bg-primary/40! text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-primary!"
+            title="Add song to Schedule"
+            onClick={(e) => {
+              e.stopPropagation()
+              void handleQueueAll()
+            }}
+          >
+            <PlusIcon className="size-3" />
+          </Button>
+        </div>
       </div>
 
       {expanded && (
         <div className="border-t border-border/50 pb-1">
           {loading && (
-            <p className="px-3 py-2 text-xs text-muted-foreground">Loading sections...</p>
+            <p className="px-3 py-2 text-xs text-muted-foreground">
+              Loading sections...
+            </p>
           )}
-          {fullSong?.sections.map((section) => (
-            <SongSectionRow
-              key={section.id}
-              section={section}
-              onQueue={handleQueueSection}
-            />
-          ))}
+          {fullSong &&
+            fullSong.sections.map((section) => (
+              <SongSectionRow
+                key={section.id}
+                section={section}
+                fullSong={fullSong}
+                onQueue={handleQueueSection}
+              />
+            ))}
         </div>
       )}
     </div>
@@ -182,154 +285,177 @@ function SongRow({
 }
 
 export function SongsSearchPanel() {
-  const [activeTab, setActiveTab] = useState<SearchTab>("title")
-  const [titleQuery, setTitleQuery] = useState("")
-  const [lyricsQuery, setLyricsQuery] = useState("")
-  const [titleResults, setTitleResults] = useState<Song[]>([])
-  const [lyricsResults, setLyricsResults] = useState<SearchSongRow[]>([])
+  const [query, setQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<SearchSongRow[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editingSong, setEditingSong] = useState<SongWithSections | null>(null)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const songs = useSongsStore((s) => s.songs)
 
-  // Load all songs on mount for the title tab default list
+  // Load all songs on mount for the default catalog list
   useEffect(() => {
     loadSongs().catch(console.error)
   }, [])
 
-  const handleTitleSearch = useCallback((q: string) => {
-    setTitleQuery(q)
+  const handleSearch = useCallback((q: string) => {
+    setQuery(q)
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (q.trim().length === 0) {
-      setTitleResults([])
+    const trimmed = q.trim()
+    if (trimmed.length === 0) {
+      setSearchResults([])
+      setIsSearching(false)
       return
     }
+
+    setIsSearching(true)
     debounceRef.current = setTimeout(() => {
-      searchSongsByTitle(q, 30).then(setTitleResults).catch(console.error)
+      searchSongs(trimmed, 30)
+        .then((res) => {
+          setSearchResults(res)
+          setIsSearching(false)
+        })
+        .catch((err) => {
+          console.error(err)
+          setIsSearching(false)
+        })
     }, 200)
   }, [])
 
-  const handleLyricsSearch = useCallback((q: string) => {
-    setLyricsQuery(q)
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (q.trim().length < 3) {
-      setLyricsResults([])
-      return
-    }
-    debounceRef.current = setTimeout(() => {
-      searchSongs(q, 20).then(setLyricsResults).catch(console.error)
-    }, 280)
-  }, [])
+  const handleClear = useCallback(() => {
+    handleSearch("")
+  }, [handleSearch])
 
-  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current) }, [])
+  useEffect(
+    () => () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    },
+    []
+  )
 
-  // Deduplicate lyrics results by song_id, keeping first (best rank) match per song
-  const dedupedLyrics = lyricsResults.reduce<SearchSongRow[]>((acc, row) => {
-    if (!acc.find((r) => r.song_id === row.song_id)) acc.push(row)
-    return acc
-  }, [])
-
-  const titleList = titleQuery.trim() ? titleResults : songs
+  const isQueryActive = query.trim().length > 0
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card">
-      {/* Tab row + search input */}
-      <div className="flex shrink-0 items-center gap-0 border-b border-border min-h-11">
-        <div className="flex items-center gap-1 px-3 py-1.5">
-          <button
-            onClick={() => setActiveTab("title")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
-              activeTab === "title"
-                ? "border-lime-500/50 bg-lime-500/15"
-                : "border-border text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <MusicIcon className={cn("size-3.5", activeTab === "title" ? "text-lime-400" : "text-muted-foreground")} />
-            Songs
-          </button>
-          <button
-            onClick={() => setActiveTab("lyrics")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors",
-              activeTab === "lyrics"
-                ? "border-lime-500/50 bg-lime-500/15"
-                : "border-border bg-background text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <SearchIcon className={cn("size-3.5", activeTab === "lyrics" ? "text-lime-400" : "text-muted-foreground")} />
-            Lyrics
-          </button>
+    <div
+      data-slot="songs-search-panel"
+      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card"
+    >
+      {/* Header with single unified search input */}
+      <div className="flex min-h-11 shrink-0 items-center gap-2 border-b border-border px-3 py-1.5">
+        <div className="flex shrink-0 items-center gap-1.5 text-xs font-semibold text-foreground">
+          <MusicIcon className="size-4 text-lime-400" />
+          <span>Songs</span>
         </div>
 
-        <div className="flex flex-1 items-center pr-3">
-          {activeTab === "title" ? (
-            <Input
-              placeholder="Search by title..."
-              value={titleQuery}
-              onChange={(e) => handleTitleSearch(e.target.value)}
-              className="h-7 flex-1 text-xs"
-            />
-          ) : (
-            <Input
-              placeholder="Search by lyrics..."
-              value={lyricsQuery}
-              onChange={(e) => handleLyricsSearch(e.target.value)}
-              className="h-7 flex-1 text-xs"
-            />
+        <div className="relative flex flex-1 items-center">
+          <SearchIcon className="pointer-events-none absolute left-2.5 size-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search songs by title or lyrics..."
+            value={query}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="h-7 flex-1 pr-7 pl-8 text-xs"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="absolute right-2 rounded-xs p-0.5 text-muted-foreground hover:text-foreground"
+              title="Clear search"
+            >
+              <XIcon className="size-3" />
+            </button>
           )}
         </div>
+
+        <Button
+          size="xs"
+          variant="outline"
+          onClick={() => setCreateOpen(true)}
+          className="h-7 shrink-0 gap-1 border-border px-2 text-xs font-medium hover:bg-muted"
+          title="Add a new song to library"
+        >
+          <PlusIcon className="size-3 text-lime-400" />
+          <span>Add Song</span>
+        </Button>
       </div>
 
-      {/* Results */}
+      {/* Results / Song Catalog */}
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex flex-col gap-0 p-2">
-          {activeTab === "title" && (
+          {!isQueryActive && (
             <>
-              {titleList.length === 0 && (
+              {songs.length === 0 ? (
                 <p className="p-4 text-center text-xs text-muted-foreground">
-                  {titleQuery ? "No songs found" : "No songs in library yet"}
+                  No songs in library yet
                 </p>
+              ) : (
+                songs.map((song) => (
+                  <SongRow
+                    key={song.id}
+                    song={song}
+                    query=""
+                    onEditSong={setEditingSong}
+                  />
+                ))
               )}
-              {titleList.map((song) => (
-                <SongRow key={song.id} song={song} query={titleQuery} />
-              ))}
             </>
           )}
 
-          {activeTab === "lyrics" && (
+          {isQueryActive && (
             <>
-              {lyricsQuery.length < 3 && (
+              {isSearching ? (
                 <p className="p-4 text-center text-xs text-muted-foreground">
-                  Type at least 3 characters to search lyrics...
+                  Searching songs...
                 </p>
+              ) : searchResults.length === 0 ? (
+                <p className="p-4 text-center text-xs text-muted-foreground">
+                  No songs found matching &ldquo;{query.trim()}&rdquo;
+                </p>
+              ) : (
+                searchResults.map((row) => (
+                  <SongRow
+                    key={row.song_id}
+                    song={{
+                      id: row.song_id,
+                      title: row.title,
+                      author: row.author,
+                      composer: null,
+                      copyright: null,
+                      ccli_number: null,
+                      themes: [],
+                    }}
+                    query={query.trim()}
+                    onEditSong={setEditingSong}
+                    matchedSection={
+                      row.lyrics && row.lyrics.trim().length > 0
+                        ? {
+                            type: row.section_type,
+                            num: row.section_number,
+                            lyrics: row.lyrics,
+                          }
+                        : undefined
+                    }
+                  />
+                ))
               )}
-              {lyricsQuery.length >= 3 && dedupedLyrics.length === 0 && (
-                <p className="p-4 text-center text-xs text-muted-foreground">No results found</p>
-              )}
-              {dedupedLyrics.map((row) => (
-                <SongRow
-                  key={row.song_id}
-                  song={{
-                    id: row.song_id,
-                    title: row.title,
-                    author: row.author,
-                    composer: null,
-                    copyright: null,
-                    ccli_number: null,
-                    themes: [],
-                  }}
-                  query={lyricsQuery}
-                  matchedSection={{
-                    type: row.section_type,
-                    num: row.section_number,
-                    lyrics: row.lyrics,
-                  }}
-                />
-              ))}
             </>
           )}
         </div>
       </div>
+
+      <CreateSongDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <EditSongDialog
+        song={editingSong}
+        open={editingSong !== null}
+        onOpenChange={(open) => !open && setEditingSong(null)}
+        onSaved={() => {
+          loadSongs().catch(console.error)
+          if (query.trim().length > 0) {
+            handleSearch(query)
+          }
+        }}
+      />
     </div>
   )
 }

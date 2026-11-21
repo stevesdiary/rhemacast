@@ -34,6 +34,23 @@ pub enum SectionType {
     Other(String),
 }
 
+impl std::str::FromStr for SectionType {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
+            "verse" => SectionType::Verse,
+            "chorus" => SectionType::Chorus,
+            "bridge" => SectionType::Bridge,
+            "pre_chorus" => SectionType::PreChorus,
+            "tag" => SectionType::Tag,
+            "intro" => SectionType::Intro,
+            "outro" => SectionType::Outro,
+            other => SectionType::Other(other.to_string()),
+        })
+    }
+}
+
 impl SectionType {
     pub fn as_str(&self) -> &str {
         match self {
@@ -48,17 +65,9 @@ impl SectionType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "verse" => SectionType::Verse,
-            "chorus" => SectionType::Chorus,
-            "bridge" => SectionType::Bridge,
-            "pre_chorus" => SectionType::PreChorus,
-            "tag" => SectionType::Tag,
-            "intro" => SectionType::Intro,
-            "outro" => SectionType::Outro,
-            other => SectionType::Other(other.to_string()),
-        }
+        <Self as std::str::FromStr>::from_str(s).unwrap_or(SectionType::Verse)
     }
 }
 

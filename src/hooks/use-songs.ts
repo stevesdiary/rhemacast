@@ -1,6 +1,19 @@
 import { invoke } from "@tauri-apps/api/core"
-import { useSongsStore } from "@/stores/songs-store"
-import type { Song, SongSection, SongWithSections, SearchSongRow, SongQueueItem } from "@/types"
+import {
+  useSongsStore,
+  createSong,
+  updateSong,
+  updateSectionLyrics,
+} from "@/stores/songs-store"
+
+export { createSong, updateSong, updateSectionLyrics }
+import type {
+  Song,
+  SongSection,
+  SongWithSections,
+  SearchSongRow,
+  SongQueueItem,
+} from "@/types"
 
 // Stable action functions using getState() to avoid re-render loops
 
@@ -10,17 +23,28 @@ async function loadSongs(): Promise<Song[]> {
   return songs
 }
 
-export async function fetchSong(songId: number): Promise<SongWithSections | null> {
+export async function fetchSong(
+  songId: number
+): Promise<SongWithSections | null> {
   return invoke<SongWithSections | null>("get_song", { songId })
 }
 
-export async function searchSongs(query: string, limit = 20): Promise<SearchSongRow[]> {
-  const results = await invoke<SearchSongRow[]>("search_songs", { query, limit })
+export async function searchSongs(
+  query: string,
+  limit = 20
+): Promise<SearchSongRow[]> {
+  const results = await invoke<SearchSongRow[]>("search_songs", {
+    query,
+    limit,
+  })
   useSongsStore.getState().setSearchResults(results)
   return results
 }
 
-export async function searchSongsByTitle(query: string, limit = 20): Promise<Song[]> {
+export async function searchSongsByTitle(
+  query: string,
+  limit = 20
+): Promise<Song[]> {
   return invoke<Song[]>("search_songs_by_title", { query, limit })
 }
 

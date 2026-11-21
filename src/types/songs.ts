@@ -6,7 +6,7 @@ export type SectionType =
   | "tag"
   | "intro"
   | "outro"
-  | string; // Allow custom section types
+  | string // Allow custom section types
 
 export interface Song {
   id: number

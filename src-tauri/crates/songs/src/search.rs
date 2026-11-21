@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 use rusqlite::Connection;
 
@@ -123,11 +123,31 @@ fn query_tier(
     }
     Ok(results)
 }
-/// Deduplicate results by song_id, keeping the best-ranked section per song.
+/// Deduplicate results by `song_id`, keeping the best-ranked section per song.
+/// If a song has both a title-boost match (with empty lyrics) and a lyric match,
+/// we retain the title-boost rank while attaching the matched section's lyrics snippet.
 fn deduplicate_by_song(mut results: Vec<SearchSongRow>) -> Vec<SearchSongRow> {
     results.sort_by(|a, b| a.rank.partial_cmp(&b.rank).unwrap_or(std::cmp::Ordering::Equal));
-    let mut seen = HashSet::new();
-    results.into_iter().filter(|r| seen.insert(r.song_id)).collect()
+    let mut seen: HashMap<i64, SearchSongRow> = HashMap::new();
+    for r in results {
+        match seen.entry(r.song_id) {
+            std::collections::hash_map::Entry::Vacant(e) => {
+                e.insert(r);
+            }
+            std::collections::hash_map::Entry::Occupied(mut e) => {
+                let entry = e.get_mut();
+                if entry.lyrics.is_empty() && !r.lyrics.is_empty() {
+                    entry.section_type = r.section_type;
+                    entry.section_number = r.section_number;
+                    entry.lyrics = r.lyrics;
+                    entry.phrase_match = entry.phrase_match || r.phrase_match;
+                }
+            }
+        }
+    }
+    let mut deduped: Vec<SearchSongRow> = seen.into_values().collect();
+    deduped.sort_by(|a, b| a.rank.partial_cmp(&b.rank).unwrap_or(std::cmp::Ordering::Equal));
+    deduped
 }
 
 /// Search songs using 3-tier BM25 (phrase -> AND -> OR) with title boost.
@@ -169,8 +189,8 @@ pub fn search_songs(
         all_results.extend(tier3);
     }
 
-    // Title prefix boost
-    let title_boost = search_by_title_prefix(conn, query, limit)?;
+    // Title boost (prefix & substring)
+    let title_boost = search_by_title_boost(conn, query, limit)?;
     all_results.extend(title_boost);
 
     // Deduplicate by song_id, keeping best match
@@ -184,26 +204,35 @@ pub fn search_songs(
 
     Ok(final_results)
 }
-/// Search songs by title prefix (for autocomplete / quick search)
-fn search_by_title_prefix(
+/// Search songs by title (prefix matches get -2000.0 boost, substring matches get -1000.0 boost)
+fn search_by_title_boost(
     conn: &Connection,
     query: &str,
     limit: usize,
 ) -> Result<Vec<SearchSongRow>, SongsError> {
-    let pattern = format!("{}%", query);
+    let clean = query.trim();
+    if clean.is_empty() {
+        return Ok(Vec::new());
+    }
+    let prefix = format!("{clean}%");
+    let contains = format!("%{clean}%");
     let sql = "
         SELECT
             s.id as song_id,
             s.title,
-            s.author
+            s.author,
+            CASE
+                WHEN s.title LIKE ?1 THEN -2000.0
+                ELSE -1000.0
+            END as rank
         FROM songs s
-        WHERE s.title LIKE ?1
-        ORDER BY s.title
-        LIMIT ?2
+        WHERE s.title LIKE ?2
+        ORDER BY rank, s.title
+        LIMIT ?3
     ";
 
     let mut stmt = conn.prepare(sql)?;
-    let rows = stmt.query_map([&pattern, &limit.to_string()], |row| {
+    let rows = stmt.query_map([&prefix, &contains, &limit.to_string()], |row| {
         Ok(SearchSongRow {
             song_id: row.get(0)?,
             title: row.get(1)?,
@@ -211,7 +240,7 @@ fn search_by_title_prefix(
             section_type: String::new(),
             section_number: 0,
             lyrics: String::new(),
-            rank: -1000.0,
+            rank: row.get(3)?,
             phrase_match: false,
         })
     })?;
@@ -227,6 +256,7 @@ mod tests {
     use super::*;
     use crate::db::SongsDb;
     use crate::models::{SectionType, Song, SongSection};
+    use std::collections::HashSet;
     use std::env;
     use std::thread;
 
@@ -320,5 +350,92 @@ mod tests {
         for r in &results {
             assert!(song_ids.insert(r.song_id), "duplicate song_id: {}", r.song_id);
         }
+    }
+
+    #[test]
+    fn test_search_by_title_substring() {
+        let db = test_db();
+        let conn = db.conn.lock().unwrap();
+        // "Thou Art" is inside "How Great Thou Art" (substring, not a prefix)
+        let results = search_songs(&conn, "Thou Art", 10).unwrap();
+        assert!(!results.is_empty());
+        assert_eq!(results[0].title, "How Great Thou Art");
+    }
+
+    #[test]
+    fn test_title_match_retains_lyric_snippet() {
+        let db = test_db();
+        let conn = db.conn.lock().unwrap();
+        // "Amazing" matches title AND lyrics
+        let results = search_songs(&conn, "Amazing", 10).unwrap();
+        assert!(!results.is_empty());
+        assert_eq!(results[0].title, "Amazing Grace");
+        assert!(!results[0].lyrics.is_empty(), "lyrics snippet should be retained on title match");
+    }
+
+    #[test]
+    fn test_create_song_and_search() {
+        let db = test_db();
+        let new_song = Song {
+            id: 0,
+            title: "Cornerstone".to_string(),
+            author: Some("Hillsong".to_string()),
+            composer: None,
+            copyright: None,
+            ccli_number: None,
+            themes: vec!["faith".to_string()],
+        };
+        let sections = vec![
+            SongSection {
+                id: 0,
+                song_id: 0,
+                section_type: SectionType::Verse,
+                section_number: 1,
+                lyrics: "My hope is built on nothing less".to_string(),
+                order_index: 1,
+            },
+            SongSection {
+                id: 0,
+                song_id: 0,
+                section_type: SectionType::Chorus,
+                section_number: 1,
+                lyrics: "Christ alone, cornerstone".to_string(),
+                order_index: 2,
+            },
+        ];
+        let created = db.create_song(&new_song, &sections).unwrap();
+        assert!(created.song.id > 0);
+        assert_eq!(created.sections.len(), 2);
+
+        let conn = db.conn.lock().unwrap();
+        let results = search_songs(&conn, "Cornerstone", 10).unwrap();
+        assert!(!results.is_empty());
+        assert_eq!(results[0].title, "Cornerstone");
+    }
+
+    #[test]
+    fn test_update_song_and_update_section_lyrics() {
+        let db = test_db();
+        let mut song = db.get_song(1).unwrap().unwrap();
+        assert_eq!(song.song.title, "Amazing Grace");
+
+        // Update single section lyrics directly
+        let sec_id = song.sections[0].id;
+        db.update_section_lyrics(sec_id, "Amazing grace how sweet the melody").unwrap();
+        let reloaded = db.get_song(1).unwrap().unwrap();
+        assert_eq!(reloaded.sections[0].lyrics, "Amazing grace how sweet the melody");
+
+        // Update entire song and sections
+        song.song.title = "Amazing Grace (Updated)".to_string();
+        song.sections[0].lyrics = "Amazing grace how sweet the sound changed".to_string();
+        let updated = db.update_song(&song.song, &song.sections).unwrap();
+        assert_eq!(updated.song.title, "Amazing Grace (Updated)");
+        assert_eq!(updated.sections[0].lyrics, "Amazing grace how sweet the sound changed");
+
+        // Verify FTS5 indexed the updated lyrics
+        let conn = db.conn.lock().unwrap();
+        let results = search_songs(&conn, "changed", 10).unwrap();
+        assert!(!results.is_empty());
+        assert_eq!(results[0].title, "Amazing Grace (Updated)");
     }
 }

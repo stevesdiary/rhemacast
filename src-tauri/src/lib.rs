@@ -136,6 +136,9 @@ pub fn run() {
             commands::remote::update_remote_status,
             commands::songs::list_songs,
             commands::songs::get_song,
+            commands::songs::create_song,
+            commands::songs::update_song,
+            commands::songs::update_section_lyrics,
             commands::songs::search_songs,
             commands::songs::search_songs_by_title,
         ])

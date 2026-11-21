@@ -14,10 +14,13 @@ export interface SongAutocompleteResult {
 /**
  * Find matching song by title (case insensitive prefix match)
  */
-export function findMatchingSong(titleInput: string, songs: Song[]): Song | undefined {
+export function findMatchingSong(
+  titleInput: string,
+  songs: Song[]
+): Song | undefined {
   const normalized = titleInput.toLowerCase()
   return songs.find(
-    s =>
+    (s) =>
       s.title.toLowerCase().startsWith(normalized) ||
       (s.author && s.author.toLowerCase().startsWith(normalized))
   )

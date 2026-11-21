@@ -1,0 +1,437 @@
+[
+  {
+    "title": "Amazing Grace",
+    "author": "John Newton",
+    "composer": "Traditional",
+    "ccli_number": "22025",
+    "themes": ["grace", "salvation", "worship", "faith"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "Amazing grace! How sweet the sound\nThat saved a wretch like me!\nI once was lost, but now am found;\nWas blind, but now I see."
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "'Twas grace that taught my heart to fear,\nAnd grace my fears relieved;\nHow precious did that grace appear\nThe hour I first believed."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "Through many dangers, toils, and snares,\nI have already come;\n'Tis grace hath brought me safe thus far,\nAnd grace will lead me home."
+      },
+      {
+        "type": "verse",
+        "number": 4,
+        "lyrics": "When we've been there ten thousand years,\nBright shining as the sun,\nWe've no less days to sing God's praise\nThan when we'd first begun."
+      }
+    ]
+  },
+  {
+    "title": "How Great Thou Art",
+    "author": "Carl Boberg",
+    "composer": "Swedish Folk Melody",
+    "ccli_number": "14181",
+    "themes": ["creation", "worship", "praise", "salvation"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "O Lord my God, when I in awesome wonder\nConsider all the worlds Thy hands have made;\nI see the stars, I hear the rolling thunder,\nThy power throughout the universe displayed."
+      },
+      {
+        "type": "chorus",
+        "number": 1,
+        "lyrics": "Then sings my soul, my Savior God, to Thee,\nHow great Thou art, how great Thou art!\nThen sings my soul, my Savior God, to Thee,\nHow great Thou art, how great Thou art!"
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "And when I think that God, His Son not sparing,\nSent Him to die, I scarce can take it in;\nThat on the cross, my burden gladly bearing,\nHe bled and died to take away my sin."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "When Christ shall come, with shout of acclamation,\nAnd take me home, what joy shall fill my heart!\nThen I shall bow in humble adoration,\nAnd then proclaim: \"My God, how great Thou art!\""
+      }
+    ]
+  },
+  {
+    "title": "Holy, Holy, Holy! Lord God Almighty",
+    "author": "Reginald Heber",
+    "composer": "John B. Dykes",
+    "ccli_number": "1156",
+    "themes": ["trinity", "holiness", "praise", "worship"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "Holy, holy, holy! Lord God Almighty!\nEarly in the morning our song shall rise to Thee;\nHoly, holy, holy, merciful and mighty!\nGod in three Persons, blessed Trinity!"
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "Holy, holy, holy! All the saints adore Thee,\nCasting down their golden crowns around the glassy sea;\nCherubim and seraphim falling down before Thee,\nWhich wert, and art, and evermore shalt be."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "Holy, holy, holy! Though the darkness hide Thee,\nThough the eye of sinful man Thy glory may not see;\nOnly Thou art holy; there is none beside Thee,\nPerfect in power, in love, and purity."
+      },
+      {
+        "type": "verse",
+        "number": 4,
+        "lyrics": "Holy, holy, holy! Lord God Almighty!\nAll Thy works shall praise Thy Name, in earth, and sky, and sea;\nHoly, holy, holy; merciful and mighty!\nGod in three Persons, blessed Trinity!"
+      }
+    ]
+  },
+  {
+    "title": "Great Is Thy Faithfulness",
+    "author": "Thomas Chisholm",
+    "composer": "William M. Runyan",
+    "ccli_number": "18723",
+    "themes": ["faithfulness", "provision", "trust", "praise"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "Great is Thy faithfulness, O God my Father,\nThere is no shadow of turning with Thee;\nThou changest not, Thy compassions, they fail not;\nAs Thou hast been Thou forever wilt be."
+      },
+      {
+        "type": "chorus",
+        "number": 1,
+        "lyrics": "Great is Thy faithfulness! Great is Thy faithfulness!\nMorning by morning new mercies I see;\nAll I have needed Thy hand hath provided—\nGreat is Thy faithfulness, Lord, unto me!"
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "Summer and winter, and springtime and harvest,\nSun, moon and stars in their courses above,\nJoin with all nature in manifold witness\nTo Thy great faithfulness, mercy and love."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "Pardon for sin and a peace that endureth,\nThine own dear presence to cheer and to guide;\nStrength for today and bright hope for tomorrow,\nBlessings all mine, with ten thousand beside!"
+      }
+    ]
+  },
+  {
+    "title": "It Is Well With My Soul",
+    "author": "Horatio Spafford",
+    "composer": "Philip Bliss",
+    "ccli_number": "25376",
+    "themes": ["peace", "comfort", "assurance", "faith"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "When peace like a river attendeth my way,\nWhen sorrows like sea billows roll;\nWhatever my lot, Thou hast taught me to say,\nIt is well, it is well with my soul."
+      },
+      {
+        "type": "chorus",
+        "number": 1,
+        "lyrics": "It is well with my soul,\nIt is well, it is well with my soul."
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "Though Satan should buffet, though trials should come,\nLet this blest assurance control,\nThat Christ has regarded my helpless estate,\nAnd hath shed His own blood for my soul."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "My sin, oh, the bliss of this glorious thought!\nMy sin, not in part but the whole,\nIs nailed to the cross, and I bear it no more,\nPraise the Lord, praise the Lord, O my soul!"
+      },
+      {
+        "type": "verse",
+        "number": 4,
+        "lyrics": "And Lord, haste the day when my faith shall be sight,\nThe clouds be rolled back as a scroll;\nThe trump shall resound, and the Lord shall descend,\nEven so, it is well with my soul."
+      }
+    ]
+  },
+  {
+    "title": "Blessed Assurance",
+    "author": "Fanny Crosby",
+    "composer": "Phoebe Knapp",
+    "ccli_number": "22324",
+    "themes": ["assurance", "joy", "salvation", "praise"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "Blessed assurance, Jesus is mine!\nO what a foretaste of glory divine!\nHeir of salvation, purchase of God,\nBorn of His Spirit, washed in His blood."
+      },
+      {
+        "type": "chorus",
+        "number": 1,
+        "lyrics": "This is my story, this is my song,\nPraising my Savior all the day long;\nThis is my story, this is my song,\nPraising my Savior all the day long."
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "Perfect submission, perfect delight,\nVisions of rapture now burst on my sight;\nAngels descending bring from above\nEchoes of mercy, whispers of love."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "Perfect submission, all is at rest;\nI in my Savior am happy and blest,\nWatching and waiting, looking above,\nFilled with His goodness, lost in His love."
+      }
+    ]
+  },
+  {
+    "title": "Be Thou My Vision",
+    "author": "Dallán Forgaill",
+    "composer": "Irish Traditional",
+    "ccli_number": "30639",
+    "themes": ["devotion", "guidance", "prayer", "worship"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "Be Thou my Vision, O Lord of my heart;\nNaught be all else to me, save that Thou art;\nThou my best thought, by day or by night,\nWaking or sleeping, Thy presence my light."
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "Be Thou my Wisdom, and Thou my true Word;\nI ever with Thee and Thou with me, Lord;\nThou my great Father, I Thy true son;\nThou in me dwelling, and I with Thee one."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "Riches I heed not, nor man's empty praise,\nThou mine inheritance, now and always;\nThou and Thou only, first in my heart,\nHigh King of Heaven, my Treasure Thou art."
+      },
+      {
+        "type": "verse",
+        "number": 4,
+        "lyrics": "High King of Heaven, my victory won,\nMay I reach Heaven's joys, O bright Heaven's Sun!\nHeart of my own heart, whatever befall,\nStill be my Vision, O Ruler of all."
+      }
+    ]
+  },
+  {
+    "title": "Come Thou Fount of Every Blessing",
+    "author": "Robert Robinson",
+    "composer": "John Wyeth",
+    "ccli_number": "108389",
+    "themes": ["grace", "gratitude", "praise", "surrender"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "Come, Thou Fount of every blessing,\nTune my heart to sing Thy grace;\nStreams of mercy, never ceasing,\nCall for songs of loudest praise.\nTeach me some melodious sonnet,\nSung by flaming tongues above;\nPraise the mount! I'm fixed upon it,\nMount of Thy redeeming love."
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "Here I raise my Ebenezer;\nHither by Thy help I'm come;\nAnd I hope, by Thy good pleasure,\nSafely to arrive at home.\nJesus sought me when a stranger,\nWandering from the fold of God;\nHe, to rescue me from danger,\nInterposed His precious blood."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "O to grace how great a debtor\nDaily I'm constrained to be!\nLet Thy goodness, like a fetter,\nBind my wandering heart to Thee.\nProne to wander, Lord, I feel it,\nProne to leave the God I love;\nHere's my heart, O take and seal it,\nSeal it for Thy courts above."
+      }
+    ]
+  },
+  {
+    "title": "What a Friend We Have in Jesus",
+    "author": "Joseph M. Scriven",
+    "composer": "Charles C. Converse",
+    "ccli_number": "22609",
+    "themes": ["prayer", "friendship", "comfort", "trust"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "What a friend we have in Jesus,\nAll our sins and griefs to bear!\nWhat a privilege to carry\nEverything to God in prayer!\nO what peace we often forfeit,\nO what needless pain we bear,\nAll because we do not carry\nEverything to God in prayer!"
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "Have we trials and temptations?\nIs there trouble anywhere?\nWe should never be discouraged;\nTake it to the Lord in prayer.\nCan we find a friend so faithful\nWho will all our sorrows share?\nJesus knows our every weakness;\nTake it to the Lord in prayer."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "Are we weak and heavy laden,\nCumbered with a load of care?\nPrecious Savior, still our refuge;\nTake it to the Lord in prayer.\nDo thy friends despise, forsake thee?\nTake it to the Lord in prayer;\nIn His arms He'll take and shield thee;\nThou wilt find a solace there."
+      }
+    ]
+  },
+  {
+    "title": "Crown Him With Many Crowns",
+    "author": "Matthew Bridges & Godfrey Thring",
+    "composer": "George J. Elvey",
+    "ccli_number": "23938",
+    "themes": ["kingship", "praise", "resurrection", "worship"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "Crown Him with many crowns,\nThe Lamb upon His throne;\nHark! how the heavenly anthem drowns\nAll music but its own.\nAwake, my soul, and sing\nOf Him who died for thee,\nAnd hail Him as thy matchless King\nThrough all eternity."
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "Crown Him the Virgin's Son,\nThe God incarnate born,\nWhose arm those crimson trophies won\nWhich now His brow adorn;\nFruit of the mystic rose,\nAs of that rose the stem;\nThe root whence mercy ever flows,\nThe Babe of Bethlehem."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "Crown Him the Lord of love;\nBehold His hands and side,\nThose wounds, yet visible above,\nIn beauty glorified.\nNo angel in the sky\nCan fully bear that sight,\nBut downward bends his burning eye\nAt mysteries so bright."
+      },
+      {
+        "type": "verse",
+        "number": 4,
+        "lyrics": "Crown Him the Lord of life,\nWho triumphed over the grave,\nAnd rose victorious in the strife\nFor those He came to save;\nHis glories now we sing\nWho died and rose on high,\nWho died eternal life to bring,\nAnd lives that death may die."
+      }
+    ]
+  },
+  {
+    "title": "When I Survey the Wondrous Cross",
+    "author": "Isaac Watts",
+    "composer": "Lowell Mason",
+    "ccli_number": "27893",
+    "themes": ["cross", "humility", "salvation", "sacrifice"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "When I survey the wondrous cross\nOn which the Prince of glory died,\nMy richest gain I count but loss,\nAnd pour contempt on all my pride."
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "Forbid it, Lord, that I should boast,\nSave in the death of Christ my God!\nAll the vain things that charm me most,\nI sacrifice them to His blood."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "See from His head, His hands, His feet,\nSorrow and love flow mingled down!\nDid e'er such love and sorrow meet,\nOr thorns compose so rich a crown?"
+      },
+      {
+        "type": "verse",
+        "number": 4,
+        "lyrics": "Were the whole realm of nature mine,\nThat were a present far too small;\nLove so amazing, so divine,\nDemands my soul, my life, my all."
+      }
+    ]
+  },
+  {
+    "title": "Rock of Ages",
+    "author": "Augustus Toplady",
+    "composer": "Thomas Hastings",
+    "ccli_number": "40588",
+    "themes": ["refuge", "salvation", "grace", "atonement"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "Rock of Ages, cleft for me,\nLet me hide myself in Thee;\nLet the water and the blood,\nFrom Thy wounded side which flowed,\nBe of sin the double cure,\nSave from wrath and make me pure."
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "Not the labor of my hands\nCan fulfill Thy law's demands;\nCould my zeal no respite know,\nCould my tears forever flow,\nAll for sin could not atone;\nThou must save, and Thou alone."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "Nothing in my hand I bring,\nSimply to the cross I cling;\nNaked, come to Thee for dress;\nHelpless, look to Thee for grace;\nFoul, I to the fountain fly;\nWash me, Savior, or I die."
+      },
+      {
+        "type": "verse",
+        "number": 4,
+        "lyrics": "While I draw this fleeting breath,\nWhen mine eyes shall close in death,\nWhen I soar to worlds unknown,\nSee Thee on Thy judgment throne,\nRock of Ages, cleft for me,\nLet me hide myself in Thee."
+      }
+    ]
+  },
+  {
+    "title": "To God Be the Glory",
+    "author": "Fanny Crosby",
+    "composer": "William H. Doane",
+    "ccli_number": "23426",
+    "themes": ["praise", "salvation", "glory", "gospel"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "To God be the glory, great things He hath done!\nSo loved He the world that He gave us His Son,\nWho yielded His life an atonement for sin,\nAnd opened the life gate that all may go in."
+      },
+      {
+        "type": "chorus",
+        "number": 1,
+        "lyrics": "Praise the Lord, praise the Lord,\nLet the earth hear His voice!\nPraise the Lord, praise the Lord,\nLet the people rejoice!\nO come to the Father through Jesus the Son,\nAnd give Him the glory, great things He hath done!"
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "O perfect redemption, the purchase of blood,\nTo every believer the promise of God;\nThe vilest offender who truly believes,\nThat moment from Jesus a pardon receives."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "Great things He hath taught us, great things He hath done,\nAnd great our rejoicing through Jesus the Son;\nBut purer, and higher, and greater will be\nOur wonder, our transport, when Jesus we see."
+      }
+    ]
+  },
+  {
+    "title": "A Mighty Fortress Is Our God",
+    "author": "Martin Luther",
+    "composer": "Martin Luther",
+    "ccli_number": "42964",
+    "themes": ["strength", "protection", "victory", "faith"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "A mighty fortress is our God,\nA bulwark never failing;\nOur helper He, amid the flood\nOf mortal ills prevailing:\nFor still our ancient foe\nDoth seek to work us woe;\nHis craft and power are great,\nAnd, armed with cruel hate,\nOn earth is not his equal."
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "Did we in our own strength confide,\nOur striving would be losing;\nWere not the right Man on our side,\nThe Man of God's own choosing:\nDost ask who that may be?\nChrist Jesus, it is He;\nLord Sabaoth His Name,\nFrom age to age the same,\nAnd He must win the battle."
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "And though this world, with devils filled,\nShould threaten to undo us,\nWe will not fear, for God hath willed\nHis truth to triumph through us:\nThe Prince of Darkness grim,\nWe tremble not for him;\nHis rage we can endure,\nFor lo, his doom is sure,\nOne little word shall fell him."
+      },
+      {
+        "type": "verse",
+        "number": 4,
+        "lyrics": "That word above all earthly powers,\nNo thanks to them, abideth;\nThe Spirit and the gifts are ours\nThrough Him Who with us sideth:\nLet goods and kindred go,\nThis mortal life also;\nThe body they may kill:\nGod's truth abideth still,\nHis kingdom is forever."
+      }
+    ]
+  },
+  {
+    "title": "'Tis So Sweet to Trust in Jesus",
+    "author": "Louisa M. R. Stead",
+    "composer": "William J. Kirkpatrick",
+    "ccli_number": "22609",
+    "themes": ["trust", "faith", "peace", "jesus"],
+    "sections": [
+      {
+        "type": "verse",
+        "number": 1,
+        "lyrics": "'Tis so sweet to trust in Jesus,\nJust to take Him at His Word;\nJust to rest upon His promise,\nJust to know, \"Thus saith the Lord!\""
+      },
+      {
+        "type": "chorus",
+        "number": 1,
+        "lyrics": "Jesus, Jesus, how I trust Him!\nHow I've proved Him o'er and o'er;\nJesus, Jesus, precious Jesus!\nO for grace to trust Him more!"
+      },
+      {
+        "type": "verse",
+        "number": 2,
+        "lyrics": "O how sweet to trust in Jesus,\nJust to trust His cleansing blood;\nJust in simple faith to plunge me\n'Neath the healing, cleansing flood!"
+      },
+      {
+        "type": "verse",
+        "number": 3,
+        "lyrics": "Yes, 'tis sweet to trust in Jesus,\nJust from sin and self to cease;\nJust from Jesus simply taking\nLife and rest, and joy and peace."
+      },
+      {
+        "type": "verse",
+        "number": 4,
+        "lyrics": "I'm so glad I learned to trust Thee,\nPrecious Jesus, Savior, Friend;\nAnd I know that Thou art with me,\nWilt be with me to the end."
+      }
+    ]
+  }
+]

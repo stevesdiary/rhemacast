@@ -7,6 +7,7 @@
 import { Database } from "bun:sqlite"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { seedSongs } from "./seed-songs"
 
 const DATA_DIR = import.meta.dir
 const DB_PATH = join(DATA_DIR, "rhema.db")
@@ -447,53 +448,32 @@ const TRANSLATIONS_META: Array<{
   //   license: "Public Domain",
   // },
 
-  // // Spanish
-  // {
-  //   file: "SpaRV.json",
-  //   abbreviation: "SpaRV",
-  //   title: "Reina-Valera 1909",
-  //   language: "es",
-  //   license: "Public Domain",
-  // },
-  // {
-  //   file: "NVI-S.json",
-  //   abbreviation: "NVI-S",
-  //   title: "Nueva Versión Internacional",
-  //   language: "es",
-  //   license: "Biblica",
-  // },
-  // {
-  //   file: "NVI-P.json",
-  //   abbreviation: "NVI-P",
-  //   title: "Nova Versão Internacional",
-  //   language: "pt",
-  //   license: "Biblica",
-  // },
-  // {
-  //   file: "NTV.json",
-  //   abbreviation: "NTV",
-  //   title: "Nueva Traducción Viviente",
-  //   language: "es",
-  //   license: "Tyndale House",
-  // },
+  // Spanish
+  {
+    file: "SpaRV.json",
+    abbreviation: "SpaRV",
+    title: "Reina-Valera 1909",
+    language: "es",
+    license: "Public Domain",
+  },
 
-  // // French
-  // {
-  //   file: "FreJND.json",
-  //   abbreviation: "FreJND",
-  //   title: "J.N. Darby French 1885",
-  //   language: "fr",
-  //   license: "Public Domain",
-  // },
+  // French
+  {
+    file: "FreJND.json",
+    abbreviation: "FreJND",
+    title: "J.N. Darby French 1885",
+    language: "fr",
+    license: "Public Domain",
+  },
 
-  // // Portuguese
-  // {
-  //   file: "PorBLivre.json",
-  //   abbreviation: "PorBLivre",
-  //   title: "Bíblia Livre",
-  //   language: "pt",
-  //   license: "Public Domain",
-  // },
+  // Portuguese
+  {
+    file: "PorBLivre.json",
+    abbreviation: "PorBLivre",
+    title: "Bíblia Livre",
+    language: "pt",
+    license: "Public Domain",
+  },
 
   // // Afrikaans
   // {
@@ -515,20 +495,9 @@ function main() {
 
   const db = new Database(DB_PATH, { create: true })
 
-  // Create schema — execute each statement individually for FTS5 compatibility
+  // Create schema
   const schema = readFileSync(SCHEMA_PATH, "utf-8")
-  const statements = schema
-    .split(";")
-    .map((s) => s.trim())
-    .filter(Boolean)
-  for (const stmt of statements) {
-    try {
-      db.exec(stmt + ";")
-    } catch (e) {
-      console.error(`  ❌ Failed on SQL: ${stmt.substring(0, 60)}...`)
-      throw e
-    }
-  }
+  db.exec(schema)
 
   // Prepare insert statements
   const insertTranslation = db.prepare(
@@ -677,6 +646,11 @@ function main() {
     )
   }
 
+  // Import seed songs
+  console.log("\n  🎵 Importing seed songs & lyrics...")
+  const { songsAdded, sectionsAdded } = seedSongs(db)
+  console.log(`  ✓ ${songsAdded} songs (${sectionsAdded} sections) imported`)
+
   // Optimize
   console.log("\n  ⚡ Optimizing database...")
   db.exec("PRAGMA optimize;")
@@ -692,11 +666,15 @@ function main() {
   const crossTotal = db
     .query("SELECT COUNT(*) as c FROM cross_references")
     .get() as { c: number }
+  const songTotal = db.query("SELECT COUNT(*) as c FROM songs").get() as {
+    c: number
+  }
 
   console.log(`\n✅ rhema.db built successfully!`)
   console.log(`   ${transTotal.c} translations`)
   console.log(`   ${verseTotal.c.toLocaleString()} verses`)
   console.log(`   ${crossTotal.c.toLocaleString()} cross-references`)
+  console.log(`   ${songTotal.c} songs`)
   console.log(`   📁 ${DB_PATH}\n`)
 
   db.close()
