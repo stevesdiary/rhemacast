@@ -154,14 +154,25 @@ function parseInputJson(raw: string): ParsedBook[] {
         const b = root[idx]
         const canon = resolveBook(b.name || b.title || "")
         const num = canon ? canon.number : idx + 1
-        const name = canon ? canon.name : b.name || `Book ${num}`
+        const name = b.name || (canon ? canon.name : `Book ${num}`)
         const verses: ParsedVerse[] = []
-        for (const ch of b.chapters || []) {
-          const chNum = Number(ch.chapter || ch.number || 1)
-          for (const v of ch.verses || []) {
-            const vNum = Number(v.verse || v.number || 1)
-            const text = String(v.text || "").trim()
-            if (text) verses.push({ chapter: chNum, verse: vNum, text })
+        for (let chIdx = 0; chIdx < (b.chapters || []).length; chIdx++) {
+          const ch = b.chapters[chIdx]
+          const chNum = Number(ch?.chapter || ch?.number || chIdx + 1)
+          if (Array.isArray(ch)) {
+            for (let vIdx = 0; vIdx < ch.length; vIdx++) {
+              const item = ch[vIdx]
+              const text = typeof item === "string" ? item.trim() : String(item?.text || "").trim()
+              const vNum = typeof item === "object" && item?.verse ? Number(item.verse) : vIdx + 1
+              if (text) verses.push({ chapter: chNum, verse: vNum, text })
+            }
+          } else if (ch?.verses && Array.isArray(ch.verses)) {
+            for (let vIdx = 0; vIdx < ch.verses.length; vIdx++) {
+              const v = ch.verses[vIdx]
+              const vNum = Number(v.verse || v.number || vIdx + 1)
+              const text = String(v.text || "").trim()
+              if (text) verses.push({ chapter: chNum, verse: vNum, text })
+            }
           }
         }
         if (verses.length > 0) {
@@ -192,14 +203,25 @@ function parseInputJson(raw: string): ParsedBook[] {
       const b = root.books[idx]
       const canon = resolveBook(b.name || b.title || "")
       const num = canon ? canon.number : idx + 1
-      const name = canon ? canon.name : b.name || `Book ${num}`
+      const name = b.name || (canon ? canon.name : `Book ${num}`)
       const verses: ParsedVerse[] = []
-      for (const ch of b.chapters || []) {
-        const chNum = Number(ch.chapter || ch.number || 1)
-        for (const v of ch.verses || []) {
-          const vNum = Number(v.verse || v.number || 1)
-          const text = String(v.text || "").trim()
-          if (text) verses.push({ chapter: chNum, verse: vNum, text })
+      for (let chIdx = 0; chIdx < (b.chapters || []).length; chIdx++) {
+        const ch = b.chapters[chIdx]
+        const chNum = Number(ch?.chapter || ch?.number || chIdx + 1)
+        if (Array.isArray(ch)) {
+          for (let vIdx = 0; vIdx < ch.length; vIdx++) {
+            const item = ch[vIdx]
+            const text = typeof item === "string" ? item.trim() : String(item?.text || "").trim()
+            const vNum = typeof item === "object" && item?.verse ? Number(item.verse) : vIdx + 1
+            if (text) verses.push({ chapter: chNum, verse: vNum, text })
+          }
+        } else if (ch?.verses && Array.isArray(ch.verses)) {
+          for (let vIdx = 0; vIdx < ch.verses.length; vIdx++) {
+            const v = ch.verses[vIdx]
+            const vNum = Number(v.verse || v.number || vIdx + 1)
+            const text = String(v.text || "").trim()
+            if (text) verses.push({ chapter: chNum, verse: vNum, text })
+          }
         }
       }
       if (verses.length > 0) {

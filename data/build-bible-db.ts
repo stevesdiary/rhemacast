@@ -413,13 +413,6 @@ const TRANSLATIONS_META: Array<{
     license: "National Council of Churches",
   },
   {
-    file: "MSG.json",
-    abbreviation: "MSG",
-    title: "The Message",
-    language: "en",
-    license: "NavPress",
-  },
-  {
     file: "TLB.json",
     abbreviation: "TLB",
     title: "The Living Bible",
@@ -432,6 +425,13 @@ const TRANSLATIONS_META: Array<{
     title: "The Passion Translation",
     language: "en",
     license: "BroadStreet Publishing",
+  },
+  {
+    file: "YOR.json",
+    abbreviation: "YOR",
+    title: "Bíbélì Mímọ́ (Yoruba)",
+    language: "yo",
+    license: "Biblica / CC BY-SA",
   }
 ]
 

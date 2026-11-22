@@ -126,6 +126,35 @@ async function downloadCrossRefs(): Promise<void> {
   await rm(zipDest, { force: true })
 }
 
+const YORUBA_BIBLE_URL =
+  "https://raw.githubusercontent.com/thiagobodruk/bible/master/json/yo_oycb.json"
+
+async function downloadYoruba(): Promise<void> {
+  const yorDest = join(SOURCES_DIR, "YOR.json")
+  if (existsSync(yorDest)) {
+    console.log("  ⏭ YOR.json already exists, skipping")
+    return
+  }
+  const tempPath = join(DATA_DIR, "yo_temp.json")
+  await downloadFile(YORUBA_BIBLE_URL, tempPath)
+  const proc = Bun.spawn([
+    "bun",
+    "run",
+    join(DATA_DIR, "import-bible-json.ts"),
+    tempPath,
+    "--abbrev",
+    "YOR",
+    "--title",
+    "Bíbélì Mímọ́ (Yoruba)",
+    "--lang",
+    "yo",
+    "--license",
+    "Biblica / CC BY-SA",
+  ])
+  await proc.exited
+  await rm(tempPath, { force: true })
+}
+
 async function main() {
   await mkdir(SOURCES_DIR, { recursive: true })
   await mkdir(CROSS_REFS_DIR, { recursive: true })
@@ -135,6 +164,9 @@ async function main() {
 
   console.log("\n🔗 Downloading cross-references...\n")
   await downloadCrossRefs()
+
+  console.log("\n📖 Downloading Yoruba Bible (Bíbélì Mímọ́)...\n")
+  await downloadYoruba()
 
   console.log("\n✅ All source data downloaded!\n")
 }

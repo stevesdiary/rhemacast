@@ -167,11 +167,22 @@ pub fn parse_bible_json(raw: &str) -> Result<Vec<ParsedBook>, BibleError> {
 
             let canon = canonical_info(raw_name);
             let book_number = canon.map_or(idx as i32 + 1, |c| c.number);
-            let name = canon.map_or_else(|| raw_name.to_string(), |c| c.name.to_string());
-            let abbrev = canon.map_or_else(
-                || raw_name.chars().take(4).collect::<String>(),
-                |c| c.abbreviation.to_string(),
-            );
+            let name = if canon.is_some() && raw_name.is_ascii() {
+                canon.unwrap().name.to_string()
+            } else {
+                raw_name.to_string()
+            };
+            let abbrev = b_val
+                .get("abbrev")
+                .or_else(|| b_val.get("abbreviation"))
+                .and_then(Value::as_str)
+                .map(ToString::to_string)
+                .unwrap_or_else(|| {
+                    canon.map_or_else(
+                        || raw_name.chars().take(4).collect::<String>(),
+                        |c| c.abbreviation.to_string(),
+                    )
+                });
             let testament = canon.map_or_else(
                 || if book_number <= 39 { "OT" } else { "NT" }.to_string(),
                 |c| c.testament.to_string(),
@@ -201,6 +212,30 @@ pub fn parse_bible_json(raw: &str) -> Result<Vec<ParsedBook>, BibleError> {
                                 .unwrap_or("")
                                 .trim()
                                 .to_string();
+
+                            if !text.is_empty() {
+                                verses.push(ParsedVerse {
+                                    chapter: ch_num,
+                                    verse: v_num,
+                                    text,
+                                });
+                            }
+                        }
+                    } else if let Some(v_list) = ch_val.as_array() {
+                        for (v_idx, v_val) in v_list.iter().enumerate() {
+                            let text = if let Some(s) = v_val.as_str() {
+                                s.trim().to_string()
+                            } else if let Some(s) = v_val.get("text").and_then(Value::as_str) {
+                                s.trim().to_string()
+                            } else {
+                                String::new()
+                            };
+
+                            let v_num = v_val
+                                .get("verse")
+                                .or_else(|| v_val.get("number"))
+                                .and_then(Value::as_i64)
+                                .map_or(v_idx as i32 + 1, |n| n as i32);
 
                             if !text.is_empty() {
                                 verses.push(ParsedVerse {
