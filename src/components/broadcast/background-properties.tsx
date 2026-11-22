@@ -204,9 +204,14 @@ function ImageSection() {
     <div className="flex flex-col gap-3">
       {/* Image Source */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">
-          Background Image
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium text-muted-foreground">
+            Background Image
+          </label>
+          <span className="text-[0.625rem] text-muted-foreground">
+            PNG or JPEG
+          </span>
+        </div>
         <Button
           variant="outline"
           size="sm"
@@ -218,7 +223,7 @@ function ImageSection() {
             })()
           }}
         >
-          Change Image
+          {image.url ? "Change Image (PNG, JPEG)" : "Choose Image (PNG, JPEG)"}
         </Button>
       </div>
 

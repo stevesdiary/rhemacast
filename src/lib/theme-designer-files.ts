@@ -4,7 +4,7 @@ import type { BroadcastTheme } from "@/types"
 import { normalizeTheme } from "@/lib/theme-migrations"
 
 /**
- * Opens a native file dialog to pick an image, reads it,
+ * Opens a native file dialog to pick a PNG or JPEG image, reads it,
  * and returns a base64 data URL that persists across restarts.
  */
 export async function pickThemeBackgroundImage(): Promise<string | null> {
@@ -12,30 +12,37 @@ export async function pickThemeBackgroundImage(): Promise<string | null> {
     multiple: false,
     filters: [
       {
-        name: "Images",
-        extensions: ["png", "jpg", "jpeg", "webp", "gif", "bmp", "svg"],
+        name: "Images (PNG, JPEG)",
+        extensions: ["png", "jpg", "jpeg"],
+      },
+      {
+        name: "PNG Image (*.png)",
+        extensions: ["png"],
+      },
+      {
+        name: "JPEG Image (*.jpg, *.jpeg)",
+        extensions: ["jpg", "jpeg"],
       },
     ],
   })
   if (!selected) return null
 
   const path = typeof selected === "string" ? selected : selected
-  const bytes = await readFile(path)
-  const extension = path.split(".").pop()?.toLowerCase() ?? "png"
-  const mimeMap: Record<string, string> = {
-    png: "image/png",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    webp: "image/webp",
-    gif: "image/gif",
-    bmp: "image/bmp",
-    svg: "image/svg+xml",
+  const extension = path.split(".").pop()?.toLowerCase() ?? ""
+  if (!["png", "jpg", "jpeg"].includes(extension)) {
+    return null
   }
-  const mime = mimeMap[extension] ?? "image/png"
+
+  const bytes = await readFile(path)
+  const mime = extension === "png" ? "image/png" : "image/jpeg"
 
   let binary = ""
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte)
+  const chunkSize = 8192
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(
+      null,
+      bytes.subarray(i, i + chunkSize) as unknown as number[]
+    )
   }
   const base64 = btoa(binary)
   return `data:${mime};base64,${base64}`

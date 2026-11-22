@@ -137,6 +137,14 @@ export function SurfaceControls({
 
           {image ? (
             <>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-muted-foreground">
+                  Surface Image
+                </label>
+                <span className="text-[0.625rem] text-muted-foreground">
+                  PNG or JPEG
+                </span>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -148,7 +156,7 @@ export function SurfaceControls({
                   })()
                 }}
               >
-                {image.url ? "Change Image" : "Choose Image"}
+                {image.url ? "Change Image (PNG, JPEG)" : "Choose Image (PNG, JPEG)"}
               </Button>
 
               <div className="flex flex-col gap-1.5">
