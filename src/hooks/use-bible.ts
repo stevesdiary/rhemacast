@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core"
 import { useBibleStore } from "@/stores"
+import { useBroadcastStore } from "@/stores/broadcast-store"
 import { presentVerse } from "@/hooks/use-broadcast"
 import type { Translation, Book, Verse, CrossReference } from "@/types"
 import type { SemanticSearchResult } from "@/types/detection"
@@ -185,6 +186,28 @@ export async function stepVerse(
         : state.currentChapter[state.currentChapter.length - 1]
     if (!entry) return
     state.selectVerse(entry)
+    useBroadcastStore.getState().setPreviewVerse(null)
+    if (options?.present) void presentVerse(entry)
+    state.requestVerseReveal("nearest")
+    return
+  }
+
+  const loadedFirst = state.currentChapter[0]
+  const isCursorInLoaded =
+    loadedFirst &&
+    cursor.bookNumber === loadedFirst.book_number &&
+    cursor.chapter === loadedFirst.chapter
+
+  // If not navigating in-flight and cursor belongs to a different chapter, re-anchor
+  // to the loaded chapter.
+  if (!state.pendingNavigation && !isCursorInLoaded) {
+    const entry =
+      direction === "next"
+        ? state.currentChapter[0]
+        : state.currentChapter[state.currentChapter.length - 1]
+    if (!entry) return
+    state.selectVerse(entry)
+    useBroadcastStore.getState().setPreviewVerse(null)
     if (options?.present) void presentVerse(entry)
     state.requestVerseReveal("nearest")
     return
@@ -196,6 +219,7 @@ export async function stepVerse(
     const loaded = findLoadedVerse(state.currentChapter, target)
     if (loaded) {
       state.selectVerse(loaded)
+      useBroadcastStore.getState().setPreviewVerse(null)
       if (options?.present) void presentVerse(loaded)
       state.requestVerseReveal("nearest")
       return
@@ -264,8 +288,10 @@ export const bibleActions = {
     useBibleStore
       .getState()
       .setPendingNavigation({ bookNumber, chapter, verse }),
-  selectVerse: (verse: Verse | null) =>
-    useBibleStore.getState().selectVerse(verse),
+  selectVerse: (verse: Verse | null) => {
+    useBibleStore.getState().selectVerse(verse)
+    useBroadcastStore.getState().setPreviewVerse(null)
+  },
 }
 
 // Hook for components that need reactive store data

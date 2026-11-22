@@ -94,6 +94,34 @@ describe("stepVerse within a loaded chapter", () => {
     expect(mockInvoke).not.toHaveBeenCalled()
   })
 
+  it("steps sequentially 1 -> 2 -> 3 without jumping back to first verse", async () => {
+    useBibleStore.setState({ selectedVerse: johnThree[0] }) // John 3:1
+
+    await stepVerse("next")
+    expect(useBibleStore.getState().selectedVerse?.verse).toBe(2)
+
+    await stepVerse("next")
+    expect(useBibleStore.getState().selectedVerse?.verse).toBe(3)
+
+    await stepVerse("next")
+    expect(useBibleStore.getState().selectedVerse?.verse).toBe(4)
+    expect(mockInvoke).not.toHaveBeenCalled()
+  })
+
+  it("re-anchors to the loaded chapter when cursor belongs to a different chapter", async () => {
+    // Current chapter is John 3, but selectedVerse is leftover from Genesis 1:1
+    const genOne = verse(1, 1, 1, "Genesis")
+    useBibleStore.setState({ selectedVerse: genOne })
+
+    await stepVerse("next")
+
+    // Must start at John 3:1 (the loaded chapter), not jump into Genesis 1:2
+    expect(useBibleStore.getState().selectedVerse?.book_number).toBe(43)
+    expect(useBibleStore.getState().selectedVerse?.chapter).toBe(3)
+    expect(useBibleStore.getState().selectedVerse?.verse).toBe(1)
+    expect(mockInvoke).not.toHaveBeenCalled()
+  })
+
   it("enters the loaded chapter at the last verse when stepping back from nothing", async () => {
     useBibleStore.setState({ selectedVerse: null })
 

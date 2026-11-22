@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/tooltip"
 import { useBible, bibleActions, findLoadedVerse } from "@/hooks/use-bible"
 import { presentVerse } from "@/hooks/use-broadcast"
-import { useBibleStore, useQueueStore } from "@/stores"
+import { useBibleStore, useQueueStore, useBroadcastStore } from "@/stores"
 import type { Book, Verse, SemanticSearchResult } from "@/types"
 import { isVerseQueueItem } from "@/types"
 import { Input } from "@/components/ui/input"
@@ -313,14 +313,76 @@ export function SearchPanel({ embedded = false }: { embedded?: boolean } = {}) {
 
   const handleVerseClick = useCallback((verse: Verse) => {
     bibleActions.selectVerse(verse)
-    void presentVerse(verse)
+    const { isLive, autoLive } = useBroadcastStore.getState()
+    if (isLive && autoLive) {
+      void presentVerse(verse)
+    }
+    panelRef.current?.focus()
   }, [])
 
-  // Arrow key navigation. Up and Down run the same stepping action the remote
-  // bible_next / bible_prev commands do, so the two surfaces cannot diverge.
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "ArrowLeft") {
+  const handleVerseDoubleClick = useCallback((verse: Verse) => {
+    bibleActions.selectVerse(verse)
+    void presentVerse(verse)
+    panelRef.current?.focus()
+  }, [])
+
+  // Keyboard navigation listener (ArrowDown, ArrowUp, ArrowLeft, ArrowRight, Enter)
+  // Scoped to Bible panel when it is the actively worked pane.
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return
+
+      // Don't intercept when user is typing in an input
+      const activeElement = document.activeElement
+      const isInput =
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement ||
+        activeElement?.getAttribute("contenteditable") === "true"
+      if (isInput) return
+
+      // Don't intercept when a modal or dialog is open
+      const isModalOpen = Boolean(
+        document.querySelector(
+          '[role="dialog"], [role="alertdialog"], [data-state="open"][data-slot*="dialog"]'
+        )
+      )
+      if (isModalOpen) return
+
+      // Don't intercept if focus is inside another specific pane
+      const isQueueActive = Boolean(activeElement?.closest('[data-slot="queue-panel"]'))
+      const isSongWorkAreaActive = Boolean(activeElement?.closest('[data-slot="song-work-area-panel"]'))
+      const isSongsSearchActive = Boolean(activeElement?.closest('[data-slot="songs-search-panel"]'))
+      const isLexiconActive = Boolean(activeElement?.closest('[data-slot="concordance-search-panel"]'))
+      if (isQueueActive || isSongWorkAreaActive || isSongsSearchActive || isLexiconActive) {
+        return
+      }
+
+      // Panel must be visible (not hidden by tab switching)
+      if (panelRef.current && panelRef.current.offsetParent === null) {
+        return
+      }
+
+      if (activeTab !== "book") return
+
+      const isNavKey =
+        e.key === "ArrowDown" ||
+        e.key === "ArrowUp" ||
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight" ||
+        e.key === "Enter"
+
+      if (!isNavKey) return
+
+      const { isLive, autoLive } = useBroadcastStore.getState()
+      const shouldPresent = Boolean(isLive && autoLive)
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault()
+        void bibleActions.stepVerse("next", { present: shouldPresent })
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        void bibleActions.stepVerse("prev", { present: shouldPresent })
+      } else if (e.key === "ArrowLeft") {
         e.preventDefault()
         if (chapter > 1) {
           setChapter((c) => c - 1)
@@ -328,16 +390,18 @@ export function SearchPanel({ embedded = false }: { embedded?: boolean } = {}) {
       } else if (e.key === "ArrowRight") {
         e.preventDefault()
         setChapter((c) => c + 1)
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault()
-        void bibleActions.stepVerse("next", { present: true })
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault()
-        void bibleActions.stepVerse("prev", { present: true })
+      } else if (e.key === "Enter") {
+        const { selectedVerse } = useBibleStore.getState()
+        if (selectedVerse) {
+          e.preventDefault()
+          void presentVerse(selectedVerse)
+        }
       }
-    },
-    [chapter]
-  )
+    }
+
+    window.addEventListener("keydown", handleGlobalKeyDown)
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown)
+  }, [activeTab, chapter])
 
   // Context search — hybrid backend (vector + FTS5 BM25) as primary,
   // Fuse.js fallback when semantic model is not loaded.
@@ -523,11 +587,13 @@ export function SearchPanel({ embedded = false }: { embedded?: boolean } = {}) {
         e.preventDefault()
         const result = autocompleteResult
         if (result.matchedBook && result.chapter && result.verse) {
+          const { isLive, autoLive } = useBroadcastStore.getState()
+          const shouldPresent = Boolean(isLive && autoLive)
           useBibleStore.getState().setPendingNavigation({
             bookNumber: result.matchedBook.book_number,
             chapter: result.chapter,
             verse: result.verse,
-            present: true,
+            present: shouldPresent,
           })
         }
         setQuickInput("")
@@ -547,11 +613,13 @@ export function SearchPanel({ embedded = false }: { embedded?: boolean } = {}) {
   )
 
   const handleQuickVerseClick = useCallback((verse: Verse) => {
+    const { isLive, autoLive } = useBroadcastStore.getState()
+    const shouldPresent = Boolean(isLive && autoLive)
     useBibleStore.getState().setPendingNavigation({
       bookNumber: verse.book_number,
       chapter: verse.chapter,
       verse: verse.verse,
-      present: true,
+      present: shouldPresent,
     })
     setQuickInput("")
     setShowQuickVerses(false)
@@ -561,14 +629,13 @@ export function SearchPanel({ embedded = false }: { embedded?: boolean } = {}) {
     <div
       ref={panelRef}
       data-slot="search-panel"
+      tabIndex={0}
       className={cn(
         "flex min-h-0 flex-1 flex-col overflow-hidden outline-none",
         embedded
           ? "h-full w-full"
           : "rounded-lg border border-border bg-card"
       )}
-      onKeyDown={activeTab === "book" ? handleKeyDown : undefined}
-      tabIndex={-1}
     >
       {/* STICKY: Tab row + search input */}
       <div className="flex min-h-11 shrink-0 items-center gap-0 border-b border-border">
@@ -791,6 +858,7 @@ export function SearchPanel({ embedded = false }: { embedded?: boolean } = {}) {
                   key={verse.id}
                   id={`verse-${verse.id}`}
                   onClick={() => handleVerseClick(verse)}
+                  onDoubleClick={() => handleVerseDoubleClick(verse)}
                   className={cn(
                     "group flex cursor-pointer items-center gap-3 rounded-lg p-3 transition-colors",
                     verse.id === effectiveSelectedVerseId
@@ -912,7 +980,26 @@ export function SearchPanel({ embedded = false }: { embedded?: boolean } = {}) {
                     text: result.verse_text,
                   }
                   bibleActions.selectVerse(verse)
+                  const { isLive, autoLive } = useBroadcastStore.getState()
+                  if (isLive && autoLive) {
+                    void presentVerse(verse)
+                  }
+                  panelRef.current?.focus()
+                }}
+                onDoubleClick={() => {
+                  const verse: Verse = {
+                    id: 0,
+                    translation_id: activeTranslationId,
+                    book_number: result.book_number,
+                    book_name: result.book_name,
+                    book_abbreviation: "",
+                    chapter: result.chapter,
+                    verse: result.verse,
+                    text: result.verse_text,
+                  }
+                  bibleActions.selectVerse(verse)
                   void presentVerse(verse)
+                  panelRef.current?.focus()
                 }}
                 className="group relative flex cursor-pointer flex-col gap-1 rounded-lg p-3 transition-colors hover:bg-muted/50"
               >

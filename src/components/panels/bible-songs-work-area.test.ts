@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { useSongsStore } from "@/stores/songs-store"
 import { useQueueStore } from "@/stores/queue-store"
 import { useBroadcastStore } from "@/stores/broadcast-store"
+import { useBibleStore } from "@/stores/bible-store"
 import { generateSongSlides } from "@/lib/song-slides"
-import { previewSongSlide, presentSongSlide } from "@/hooks/use-broadcast"
-import type { SongWithSections, SectionType } from "@/types"
+import { previewSongSlide, presentSongSlide, presentVerse } from "@/hooks/use-broadcast"
+import { bibleActions } from "@/hooks/use-bible"
+import type { SongWithSections, SectionType, Verse } from "@/types"
 
 const mockInvoke = vi.fn()
 vi.mock("@tauri-apps/api/core", () => ({
@@ -167,5 +169,59 @@ describe("Song Work Area and Layout Integration", () => {
     expect(useSongsStore.getState().activeSlideIndex).toBe(3)
     const updated = useSongsStore.getState().selectedSong
     expect(updated?.sections.find((s) => s.id === 101)?.lyrics).toContain("when I in wonder stand")
+  })
+
+  it("Bible verse selection updates preview only when autoLive or isLive is off", () => {
+    useBroadcastStore.setState({ isLive: false, autoLive: true, liveVerse: null, previewVerse: null })
+    const sampleVerse: Verse = {
+      id: 43003016,
+      translation_id: 1,
+      book_number: 43,
+      book_name: "John",
+      book_abbreviation: "Jhn",
+      chapter: 3,
+      verse: 16,
+      text: "For God so loved the world, that he gave his only begotten Son...",
+    }
+
+    bibleActions.selectVerse(sampleVerse)
+
+    const { isLive, autoLive } = useBroadcastStore.getState()
+    if (isLive && autoLive) {
+      void presentVerse(sampleVerse)
+    }
+
+    // Selected verse is updated in Bible store
+    expect(useBibleStore.getState().selectedVerse?.verse).toBe(16)
+    // previewVerse is cleared so Program preview shows selectedVerse
+    expect(useBroadcastStore.getState().previewVerse).toBeNull()
+    // Live verse is NOT touched because isLive is false
+    expect(useBroadcastStore.getState().liveVerse).toBeNull()
+  })
+
+  it("Bible verse selection pushes live immediately when autoLive and isLive are on", async () => {
+    useBroadcastStore.setState({ isLive: true, autoLive: true, liveVerse: null, previewVerse: null })
+    const sampleVerse: Verse = {
+      id: 43003016,
+      translation_id: 1,
+      book_number: 43,
+      book_name: "John",
+      book_abbreviation: "Jhn",
+      chapter: 3,
+      verse: 16,
+      text: "For God so loved the world, that he gave his only begotten Son...",
+    }
+
+    bibleActions.selectVerse(sampleVerse)
+
+    const { isLive, autoLive } = useBroadcastStore.getState()
+    if (isLive && autoLive) {
+      await presentVerse(sampleVerse)
+    }
+
+    // Live output is updated immediately
+    const live = useBroadcastStore.getState().liveVerse
+    expect(live).not.toBeNull()
+    expect(live?.reference).toContain("John 3:16")
   })
 })
