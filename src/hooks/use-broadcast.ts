@@ -3,8 +3,7 @@ import { mark } from "@/lib/latency-marks"
 import { useBroadcastStore } from "@/stores/broadcast-store"
 import { useBibleStore } from "@/stores/bible-store"
 import { useSettingsStore } from "@/stores/settings-store"
-import type { VerseRenderData } from "@/types"
-import type { Verse } from "@/types"
+import type { VerseRenderData, Verse, ConcordanceEntry } from "@/types"
 import { toSongRenderData } from "@/lib/song-slides"
 
 export { toSongRenderData }
@@ -126,6 +125,41 @@ export function previewSongSlide(
     lineInfo,
     showTitle
   )
+  useBroadcastStore.getState().setPreviewVerse(renderData)
+}
+
+/**
+ * Format a concordance entry into slide render data.
+ */
+export function toConcordanceRenderData(
+  entry: ConcordanceEntry
+): VerseRenderData {
+  const pronStr = entry.pronunciation ? ` • /${entry.pronunciation}/` : ""
+  const reference = `${entry.lemma} • ${entry.translit} [${entry.strongs_number}${pronStr}]`
+  let text = entry.strongs_def
+  if (entry.kjv_def) {
+    text += `\n\nKJV: ${entry.kjv_def}`
+  }
+  return {
+    reference,
+    segments: [{ text }],
+  }
+}
+
+/**
+ * Present a Strong's Greek/Hebrew concordance entry directly to the Live Display.
+ */
+export function presentConcordance(entry: ConcordanceEntry): void {
+  const renderData = toConcordanceRenderData(entry)
+  useBroadcastStore.getState().setPreviewVerse(renderData)
+  useBroadcastStore.getState().setLiveVerse(renderData, null)
+}
+
+/**
+ * Preview a Strong's Greek/Hebrew concordance entry on the Preview Canvas.
+ */
+export function previewConcordance(entry: ConcordanceEntry): void {
+  const renderData = toConcordanceRenderData(entry)
   useBroadcastStore.getState().setPreviewVerse(renderData)
 }
 

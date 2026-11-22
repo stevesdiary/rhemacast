@@ -1,11 +1,12 @@
 import { useState } from "react"
-import { BookOpenIcon, MusicIcon } from "lucide-react"
+import { BookOpenIcon, MusicIcon, LanguagesIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SearchPanel } from "./search-panel"
 import { SongsSearchPanel } from "./songs-search-panel"
+import { ConcordanceSearchPanel } from "./concordance-search-panel"
 import { useSongsStore } from "@/stores/songs-store"
 
-export type BibleSongsTab = "bible" | "songs"
+export type BibleSongsTab = "bible" | "songs" | "lexicon"
 
 export function BibleSongsPanel() {
   const [activeTab, setActiveTab] = useState<BibleSongsTab>("bible")
@@ -53,15 +54,33 @@ export function BibleSongsPanel() {
               </span>
             )}
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("lexicon")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-semibold transition-colors",
+              activeTab === "lexicon"
+                ? "bg-background text-foreground shadow-xs border border-border/80"
+                : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+            )}
+            title="Browse Greek and Hebrew Strong's Concordance"
+          >
+            <LanguagesIcon className={cn("size-3.5", activeTab === "lexicon" ? "text-amber-500" : "text-muted-foreground")} />
+            <span>Lexicon</span>
+          </button>
         </div>
       </div>
 
-      {/* Tab Contents: Both kept mounted with CSS display toggling to preserve search state and scroll */}
+      {/* Tab Contents: Kept mounted with CSS display toggling to preserve search state and scroll */}
       <div className={cn("min-h-0 flex-1 flex-col", activeTab === "bible" ? "flex" : "hidden")}>
         <SearchPanel embedded />
       </div>
       <div className={cn("min-h-0 flex-1 flex-col", activeTab === "songs" ? "flex" : "hidden")}>
         <SongsSearchPanel embedded />
+      </div>
+      <div className={cn("min-h-0 flex-1 flex-col", activeTab === "lexicon" ? "flex" : "hidden")}>
+        <ConcordanceSearchPanel embedded />
       </div>
     </div>
   )

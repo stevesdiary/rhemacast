@@ -109,3 +109,53 @@ END;
 -- Indexes for common queries
 CREATE INDEX IF NOT EXISTS idx_songs_title ON songs(title);
 CREATE INDEX IF NOT EXISTS idx_song_sections_song ON song_sections(song_id, order_index);
+
+-- ============================================================
+-- Concordance Schema (OpenScriptures Strong's Greek & Hebrew)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS concordance_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    strongs_number TEXT UNIQUE NOT NULL, -- e.g., 'G2540' or 'H7965'
+    language TEXT NOT NULL,              -- 'greek' or 'hebrew'
+    lemma TEXT NOT NULL,                 -- 'καιρός' or 'שָׁלוֹם'
+    translit TEXT NOT NULL,              -- 'kairós' / 'shâlôwm'
+    translit_clean TEXT NOT NULL,        -- 'kairos' / 'shalom' (unaccented, normalized for speech matching)
+    pronunciation TEXT,                  -- 'kahee-ros''' or 'shaw-lome'''
+    strongs_def TEXT NOT NULL,           -- Strong's definition
+    kjv_def TEXT NOT NULL,               -- KJV translation usages
+    derivation TEXT,                     -- Etymology and root derivations
+    aliases TEXT                         -- JSON array of phonetic variations / aliases
+);
+
+CREATE INDEX IF NOT EXISTS idx_concordance_clean ON concordance_entries(translit_clean);
+CREATE INDEX IF NOT EXISTS idx_concordance_strongs ON concordance_entries(strongs_number);
+CREATE INDEX IF NOT EXISTS idx_concordance_lang ON concordance_entries(language);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS concordance_fts USING fts5(
+    strongs_number,
+    translit_clean,
+    lemma,
+    strongs_def,
+    kjv_def,
+    content='concordance_entries',
+    content_rowid='id',
+    tokenize='unicode61'
+);
+
+CREATE TRIGGER IF NOT EXISTS concordance_ai AFTER INSERT ON concordance_entries BEGIN
+    INSERT INTO concordance_fts(rowid, strongs_number, translit_clean, lemma, strongs_def, kjv_def)
+    VALUES (new.id, new.strongs_number, new.translit_clean, new.lemma, new.strongs_def, new.kjv_def);
+END;
+
+CREATE TRIGGER IF NOT EXISTS concordance_ad AFTER DELETE ON concordance_entries BEGIN
+    INSERT INTO concordance_fts(concordance_fts, rowid, strongs_number, translit_clean, lemma, strongs_def, kjv_def)
+    VALUES ('delete', old.id, old.strongs_number, old.translit_clean, old.lemma, old.strongs_def, old.kjv_def);
+END;
+
+CREATE TRIGGER IF NOT EXISTS concordance_au AFTER UPDATE ON concordance_entries BEGIN
+    INSERT INTO concordance_fts(concordance_fts, rowid, strongs_number, translit_clean, lemma, strongs_def, kjv_def)
+    VALUES ('delete', old.id, old.strongs_number, old.translit_clean, old.lemma, old.strongs_def, old.kjv_def);
+    INSERT INTO concordance_fts(rowid, strongs_number, translit_clean, lemma, strongs_def, kjv_def)
+    VALUES (new.id, new.strongs_number, new.translit_clean, new.lemma, new.strongs_def, new.kjv_def);
+END;

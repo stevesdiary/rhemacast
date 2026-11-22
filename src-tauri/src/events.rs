@@ -4,6 +4,7 @@ pub const EVENT_TRANSCRIPT_FINAL: &str = "transcript_final";
 pub const EVENT_AUDIO_SOURCE_LOST: &str = "audio_source_lost";
 pub const EVENT_AUDIO_SOURCE_RECOVERED: &str = "audio_source_recovered";
 pub const EVENT_AUDIO_TEST_STOPPED: &str = "audio_test_stopped";
+pub const EVENT_CONCORDANCE_DETECTIONS: &str = "concordance_detections";
 
 #[derive(Clone, serde::Serialize)]
 pub struct AudioLevelPayload {

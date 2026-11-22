@@ -10,8 +10,10 @@ export type {
   QueueItemType,
   VerseQueueItem,
   SongQueueItem,
+  ConcordanceQueueItem,
 } from "./queue"
-export { isVerseQueueItem, isSongQueueItem } from "./queue"
+export { isVerseQueueItem, isSongQueueItem, isConcordanceQueueItem } from "./queue"
+export type { ConcordanceEntry, ConcordanceDetection } from "./concordance"
 export type {
   DetectionResult,
   DetectionStatus,

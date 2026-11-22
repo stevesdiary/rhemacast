@@ -386,6 +386,7 @@ pub async fn start_transcription(
                     truncate_safe(&transcript, 40)
                 );
                 let direct_found = run_direct_detection(&app_clone, &transcript);
+                run_concordance_detection(&app_clone, &transcript);
                 if !is_final {
                     return;
                 }
@@ -602,6 +603,46 @@ fn run_direct_detection(app: &AppHandle, transcript: &str) -> bool {
     let _ = app.emit("verse_detections", &results);
     log::info!("[DET-DIRECT] Detection took {:?} for {:?}", t0.elapsed(), truncate_safe(transcript, 50));
     has_high_confidence
+}
+
+/// Detect Greek and Hebrew concordance terms from sermon transcript.
+fn run_concordance_detection(app: &AppHandle, transcript: &str) {
+    let detector_state: State<'_, Mutex<rhema_detection::ConcordanceDetector>> = app.state();
+    let app_managed: State<'_, Mutex<AppState>> = app.state();
+
+    let detections = {
+        let app_state = match app_managed.lock() {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("[DET-CONCORDANCE] Failed to lock AppState: {e}");
+                return;
+            }
+        };
+        let db = match app_state.bible_db.as_ref() {
+            Some(db) => db,
+            None => return,
+        };
+        let mut detector = match detector_state.lock() {
+            Ok(d) => d,
+            Err(e) => {
+                log::error!("[DET-CONCORDANCE] Failed to lock ConcordanceDetector: {e}");
+                return;
+            }
+        };
+        detector.detect(transcript, db)
+    };
+
+    if !detections.is_empty() {
+        for d in &detections {
+            log::info!(
+                "[DET-CONCORDANCE] Found: {} ({}) - {:.0}%",
+                d.entry.strongs_number,
+                d.entry.translit,
+                d.confidence * 100.0
+            );
+        }
+        let _ = app.emit(crate::events::EVENT_CONCORDANCE_DETECTIONS, &detections);
+    }
 }
 
 /// Run 3-to-5 word window matching against the Bible database.

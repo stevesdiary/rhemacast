@@ -50,3 +50,19 @@ pub struct SearchVerse {
     pub verse: i32,
     pub text: String,
 }
+
+/// An entry from Strong's Greek or Hebrew concordance.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ConcordanceEntry {
+    pub id: i64,
+    pub strongs_number: String,
+    pub language: String,
+    pub lemma: String,
+    pub translit: String,
+    pub translit_clean: String,
+    pub pronunciation: Option<String>,
+    pub strongs_def: String,
+    pub kjv_def: String,
+    pub derivation: Option<String>,
+    pub aliases: Option<String>,
+}

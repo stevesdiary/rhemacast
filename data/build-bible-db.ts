@@ -8,6 +8,7 @@ import { Database } from "bun:sqlite"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { seedSongs } from "./seed-songs"
+import { seedStrongs } from "./seed-strongs"
 
 const DATA_DIR = import.meta.dir
 const DB_PATH = join(DATA_DIR, "rhema.db")
@@ -632,6 +633,11 @@ function main() {
   console.log("\n  🎵 Importing seed songs & lyrics...")
   const { songsAdded, sectionsAdded } = seedSongs(db)
   console.log(`  ✓ ${songsAdded} songs (${sectionsAdded} sections) imported`)
+
+  // Import Strong's Greek & Hebrew Concordance
+  console.log("\n  📖 Importing Strong's Greek & Hebrew Concordance...")
+  const { greekAdded, hebrewAdded } = seedStrongs(db)
+  console.log(`  ✓ ${greekAdded} Greek + ${hebrewAdded} Hebrew entries imported`)
 
   // Optimize
   console.log("\n  ⚡ Optimizing database...")

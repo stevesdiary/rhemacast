@@ -94,6 +94,7 @@ pub fn run() {
         .manage(Mutex::new(rhema_detection::DirectDetector::new()))
         .manage(Mutex::new(rhema_detection::DetectionMerger::new()))
         .manage(Mutex::new(rhema_detection::ReadingMode::new()))
+        .manage(Mutex::new(rhema_detection::ConcordanceDetector::new()))
         .manage(Mutex::new(commands::remote::OscRuntime::new()))
         .manage(Mutex::new(commands::remote::HttpRuntime::new()))
         .invoke_handler(tauri::generate_handler![
@@ -108,6 +109,9 @@ pub fn run() {
             commands::bible::set_active_translation,
             commands::bible::import_bible_translation,
             commands::bible::delete_user_translation,
+            commands::concordance::get_concordance_entry,
+            commands::concordance::search_concordance,
+            commands::concordance::detect_concordance_words,
             commands::diagnostics::export_diagnostics,
             commands::detection::detect_verses,
             commands::detection::detection_status,

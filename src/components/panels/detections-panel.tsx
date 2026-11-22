@@ -2,14 +2,14 @@ import { useEffect, useMemo } from "react"
 import { PanelHeader } from "@/components/ui/panel-header"
 import { ConfidenceDot } from "@/components/ui/confidence-dot"
 import { Button } from "@/components/ui/button"
-import { PlayIcon, PlusIcon, XIcon } from "lucide-react"
+import { PlayIcon, PlusIcon, XIcon, EyeIcon, LanguagesIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useDetection, detectionActions } from "@/hooks/use-detection"
 import { bibleActions } from "@/hooks/use-bible"
 import { useQueueStore, useBibleStore } from "@/stores"
-import { presentVerse } from "@/hooks/use-broadcast"
+import { presentVerse, presentConcordance, previewConcordance } from "@/hooks/use-broadcast"
 import { mark } from "@/lib/latency-marks"
-import type { DetectionResult } from "@/types"
+import type { DetectionResult, ConcordanceDetection } from "@/types"
 
 const SOURCE_COLORS: Record<string, { text: string; label: string }> = {
   direct: { text: "text-green-600", label: "Direct" },
@@ -108,6 +108,106 @@ function DetectionCard({ detection }: { detection: DetectionResult }) {
   )
 }
 
+function ConcordanceCard({ detection }: { detection: ConcordanceDetection }) {
+  const { entry } = detection
+  const pronStr = entry.pronunciation ? ` /${entry.pronunciation}/` : ""
+
+  const handlePresent = () => {
+    presentConcordance(entry)
+  }
+
+  const handlePreview = () => {
+    previewConcordance(entry)
+  }
+
+  const handleQueue = () => {
+    useQueueStore.getState().addItem({
+      id: crypto.randomUUID(),
+      type: "concordance",
+      entry,
+      reference: `${entry.lemma} • ${entry.translit} (${entry.strongs_number})`,
+      added_at: Date.now(),
+      source: "ai",
+    })
+  }
+
+  return (
+    <div className="group border-b border-amber-500/30 bg-amber-500/5 p-3 transition-colors hover:bg-amber-500/10 last:border-0">
+      <div className="flex items-center gap-2">
+        <ConfidenceDot confidence={detection.confidence} />
+        <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[0.625rem] font-bold text-amber-500 uppercase tracking-wider">
+          {entry.language} • {entry.strongs_number}
+        </span>
+        <span className="flex-1 truncate text-sm font-semibold text-foreground">
+          {entry.lemma} • {entry.translit}
+          {pronStr && (
+            <span className="ml-1 text-xs font-normal text-muted-foreground">
+              {pronStr}
+            </span>
+          )}
+        </span>
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label={`Dismiss ${entry.strongs_number}`}
+          title="Dismiss"
+          className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+          onClick={() =>
+            detectionActions.dismissConcordanceDetection(entry.strongs_number)
+          }
+        >
+          <XIcon className="size-2.5" />
+        </Button>
+      </div>
+
+      <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-foreground/90">
+        {entry.strongs_def}
+      </p>
+
+      {entry.kjv_def && (
+        <p className="mt-0.5 line-clamp-1 text-[0.6875rem] text-muted-foreground italic">
+          <span className="font-medium text-foreground/70 not-italic">KJV:</span> {entry.kjv_def}
+        </p>
+      )}
+
+      {detection.trigger_phrase && (
+        <p className="mt-1 text-[0.625rem] text-amber-600/80 dark:text-amber-400/80 font-medium">
+          Trigger: &ldquo;{detection.trigger_phrase}&rdquo;
+        </p>
+      )}
+
+      <div className="mt-2 flex gap-1.5">
+        <Button
+          size="xs"
+          className="gap-1 bg-amber-600 hover:bg-amber-700 text-white font-medium"
+          onClick={handlePresent}
+        >
+          <PlayIcon className="size-3" />
+          Present
+        </Button>
+        <Button
+          variant="outline"
+          size="xs"
+          className="gap-1 border-amber-500/30 hover:bg-amber-500/10"
+          onClick={handlePreview}
+        >
+          <EyeIcon className="size-3" />
+          Preview
+        </Button>
+        <Button
+          variant="outline"
+          size="xs"
+          className="gap-1 border-amber-500/30 hover:bg-amber-500/10"
+          onClick={handleQueue}
+        >
+          <PlusIcon className="size-3" />
+          Schedule
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function DetectionColumn({
   source,
   detections,
@@ -150,7 +250,7 @@ function DetectionColumn({
 }
 
 export function DetectionsPanel() {
-  const { detections } = useDetection()
+  const { detections, concordanceDetections } = useDetection()
 
   // Latency debugging: when the list changes, mark the React commit and the
   // next animation frame (≈ actual pixels on screen).
@@ -175,6 +275,8 @@ export function DetectionsPanel() {
     [detections]
   )
 
+  const hasAnyDetections = detections.length > 0 || concordanceDetections.length > 0
+
   return (
     <div
       data-slot="detections-panel"
@@ -182,17 +284,47 @@ export function DetectionsPanel() {
     >
       <PanelHeader title="Recent detections">
         <button
-          onClick={() => detectionActions.clearDetections()}
+          onClick={() => {
+            detectionActions.clearDetections()
+            detectionActions.clearConcordanceDetections()
+          }}
           className="text-[0.625rem] text-muted-foreground transition-colors hover:text-foreground"
         >
           Clear all
         </button>
       </PanelHeader>
 
-      {detections.length === 0 ? (
+      {/* Greek & Hebrew Lexicon Detections Banner */}
+      {concordanceDetections.length > 0 && (
+        <div className="shrink-0 border-b border-amber-500/30 bg-amber-500/5">
+          <div className="flex items-center justify-between border-b border-amber-500/20 bg-amber-500/10 px-3 py-1">
+            <span className="flex items-center gap-1.5 text-[0.625rem] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+              <LanguagesIcon className="size-3" />
+              Greek & Hebrew Lexicon ({concordanceDetections.length})
+            </span>
+            <button
+              onClick={() => detectionActions.clearConcordanceDetections()}
+              className="text-[0.6rem] text-muted-foreground hover:text-foreground"
+            >
+              Clear
+            </button>
+          </div>
+          <div className="max-h-48 overflow-y-auto divide-y divide-amber-500/15">
+            {concordanceDetections.map((d) => (
+              <ConcordanceCard key={d.entry.strongs_number} detection={d} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!hasAnyDetections ? (
         <p className="p-4 text-center text-xs text-muted-foreground">
-          Verse detections will appear here during transcription
+          Verse & Greek/Hebrew word detections will appear here during preaching
         </p>
+      ) : detections.length === 0 ? (
+        <div className="p-4 text-center text-xs text-muted-foreground">
+          No verse detections yet
+        </div>
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-2 divide-x divide-border">
           <DetectionColumn source="direct" detections={directDetections} />

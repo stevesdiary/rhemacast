@@ -18,7 +18,7 @@ import { bibleActions } from "@/hooks/use-bible"
 import { presentVerse } from "@/hooks/use-broadcast"
 import { mark, observeLongTasks } from "@/lib/latency-marks"
 import { pickAutoPresentTarget } from "@/lib/auto-present-target"
-import type { DetectionResult, ReadingAdvance, VerseQueueItem } from "@/types"
+import type { DetectionResult, ConcordanceDetection, ReadingAdvance, VerseQueueItem } from "@/types"
 import { isVerseQueueItem } from "@/types"
 
 /**
@@ -85,6 +85,11 @@ export function TranscriptPanel() {
       console.log(`[VOICE] Translation switched to ${data.abbreviation}`)
     }
   )
+
+  // Listen for Greek/Hebrew concordance detections
+  useTauriEvent<ConcordanceDetection[]>("concordance_detections", (detections) => {
+    useDetectionStore.getState().addConcordanceDetections(detections)
+  })
 
   // Listen for detection results from the backend (batch replaces previous detections)
   useTauriEvent<DetectionResult[]>("verse_detections", (detections) => {

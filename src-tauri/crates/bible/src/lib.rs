@@ -17,6 +17,7 @@ pub mod lookup;
 pub mod search;
 pub mod crossref;
 pub mod import;
+pub mod concordance;
 
 pub use models::*;
 pub use error::*;

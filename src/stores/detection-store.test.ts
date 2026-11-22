@@ -274,4 +274,60 @@ describe("detection store dismissDetection", () => {
 
     expect(useDetectionStore.getState().dismissed).toEqual({})
   })
+
+  it("handles concordance detections adding, deduping, and dismissing", () => {
+    const entry1 = {
+      id: 1,
+      strongs_number: "G2540",
+      language: "greek" as const,
+      lemma: "καιρός",
+      translit: "kairos",
+      translit_clean: "kairos",
+      strongs_def: "an occasion, set time",
+      kjv_def: "season, time",
+    }
+    const entry2 = {
+      id: 2,
+      strongs_number: "G4487",
+      language: "greek" as const,
+      lemma: "ῥῆμα",
+      translit: "rhema",
+      translit_clean: "rhema",
+      strongs_def: "spoken utterance",
+      kjv_def: "word, saying",
+    }
+
+    useDetectionStore.getState().addConcordanceDetections([
+      {
+        entry: entry1,
+        confidence: 0.95,
+        matched_term: "kairos",
+        transcript_snippet: "in the Greek, kairos",
+        trigger_phrase: "in the Greek, kairos",
+      },
+    ])
+
+    expect(useDetectionStore.getState().concordanceDetections).toHaveLength(1)
+    expect(useDetectionStore.getState().concordanceDetections[0].entry.strongs_number).toBe("G2540")
+
+    // Adding second entry
+    useDetectionStore.getState().addConcordanceDetections([
+      {
+        entry: entry2,
+        confidence: 0.92,
+        matched_term: "rhema",
+        transcript_snippet: "a rhema word",
+      },
+    ])
+    expect(useDetectionStore.getState().concordanceDetections).toHaveLength(2)
+
+    // Dismissing entry1
+    useDetectionStore.getState().dismissConcordanceDetection("G2540")
+    expect(useDetectionStore.getState().concordanceDetections).toHaveLength(1)
+    expect(useDetectionStore.getState().concordanceDetections[0].entry.strongs_number).toBe("G4487")
+
+    // Clear all
+    useDetectionStore.getState().clearConcordanceDetections()
+    expect(useDetectionStore.getState().concordanceDetections).toHaveLength(0)
+  })
 })

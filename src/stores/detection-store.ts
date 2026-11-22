@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import type { DetectionResult } from "@/types"
+import type { DetectionResult, ConcordanceDetection } from "@/types"
 
 /**
  * How long a dismissed reference stays suppressed (issue #149).
@@ -34,6 +34,7 @@ function pruneDismissed(
 
 interface DetectionState {
   detections: DetectionResult[]
+  concordanceDetections: ConcordanceDetection[]
   // Dismissed `source|verse_ref` keys → the time their suppression expires.
   dismissed: Record<string, number>
   autoMode: boolean
@@ -46,12 +47,18 @@ interface DetectionState {
   dismissDetection: (verseRef: string, source: DetectionSource) => void
   isDismissed: (verseRef: string, source: DetectionSource) => boolean
   clearDetections: () => void
+
+  addConcordanceDetections: (detections: ConcordanceDetection[]) => void
+  dismissConcordanceDetection: (strongsNumber: string) => void
+  clearConcordanceDetections: () => void
+
   setAutoMode: (auto: boolean) => void
   setConfidenceThreshold: (threshold: number) => void
 }
 
 export const useDetectionStore = create<DetectionState>((set, get) => ({
   detections: [],
+  concordanceDetections: [],
   dismissed: {},
   autoMode: false,
   confidenceThreshold: 0.8,
@@ -139,6 +146,26 @@ export const useDetectionStore = create<DetectionState>((set, get) => ({
     return expiresAt !== undefined && expiresAt > Date.now()
   },
   clearDetections: () => set({ detections: [], dismissed: {} }),
+  addConcordanceDetections: (incoming) =>
+    set((state) => {
+      // Dedup by strongs_number, newest at the top
+      const seen = new Set<string>()
+      const list: ConcordanceDetection[] = []
+      for (const d of [...incoming, ...state.concordanceDetections]) {
+        if (!seen.has(d.entry.strongs_number)) {
+          seen.add(d.entry.strongs_number)
+          list.push(d)
+        }
+      }
+      return { concordanceDetections: list.slice(0, 20) }
+    }),
+  dismissConcordanceDetection: (strongsNumber) =>
+    set((state) => ({
+      concordanceDetections: state.concordanceDetections.filter(
+        (d) => d.entry.strongs_number !== strongsNumber
+      ),
+    })),
+  clearConcordanceDetections: () => set({ concordanceDetections: [] }),
   setAutoMode: (autoMode) => set({ autoMode }),
   setConfidenceThreshold: (confidenceThreshold) => set({ confidenceThreshold }),
 }))
