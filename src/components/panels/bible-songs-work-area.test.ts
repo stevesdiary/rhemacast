@@ -134,4 +134,38 @@ describe("Song Work Area and Layout Integration", () => {
     expect(useQueueStore.getState().items).toHaveLength(1)
     expect(useSongsStore.getState().selectedSong?.song.id).toBe(42)
   })
+
+  it("pushes to live on single selection when auto and live toggles are on", () => {
+    useBroadcastStore.setState({ isLive: true, autoLive: true })
+    useSongsStore.getState().selectSong(testSong)
+
+    const slides = generateSongSlides(testSong, "line")
+    const slide = slides[1]
+
+    const { isLive, autoLive } = useBroadcastStore.getState()
+    if (isLive && autoLive) {
+      presentSongSlide(slide.songTitle, slide.sectionLabel, slide.text)
+    } else {
+      previewSongSlide(slide.songTitle, slide.sectionLabel, slide.text)
+    }
+
+    const live = useBroadcastStore.getState().liveVerse
+    expect(live).not.toBeNull()
+    expect(live?.segments[0].text).toBe(slide.text)
+  })
+
+  it("preserves activeSlideIndex and does not scroll to start when line is edited and autosaved", async () => {
+    mockInvoke.mockResolvedValueOnce(undefined) // for update_section_lyrics
+    useSongsStore.getState().selectSong(testSong)
+    useSongsStore.getState().setActiveSlideIndex(3)
+
+    // Autosave line in section 101
+    const { updateSectionLyrics } = await import("@/stores/songs-store")
+    await updateSectionLyrics(101, "O Lord my God, when I in wonder stand\nConsider all Thy works")
+
+    // activeSlideIndex must remain 3 (NOT reset to 0 to start over!)
+    expect(useSongsStore.getState().activeSlideIndex).toBe(3)
+    const updated = useSongsStore.getState().selectedSong
+    expect(updated?.sections.find((s) => s.id === 101)?.lyrics).toContain("when I in wonder stand")
+  })
 })

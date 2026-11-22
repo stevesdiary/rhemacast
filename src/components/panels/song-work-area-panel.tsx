@@ -61,31 +61,38 @@ export function SongWorkAreaPanel() {
     }
   }, [])
 
-  // Auto-scroll active slide into view smoothly
+  // Auto-scroll active slide into view smoothly (skip when editing to prevent jumping)
   useEffect(() => {
     if (!listContainerRef.current) return
+    if (editingSlideId !== null) return
     const activeEl = listContainerRef.current.querySelector(
       `[data-slide-index="${activeSlideIndex}"]`
     )
     if (activeEl) {
       activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" })
     }
-  }, [activeSlideIndex])
+  }, [activeSlideIndex, editingSlideId])
 
-  // Action: Single-click Preview
-  const handlePreviewSlide = useCallback(
+  // Action: Single-click (pushes to Live directly if auto and live toggles are on, otherwise Preview)
+  const handleSlideClick = useCallback(
     (slide: SongSlide, idx: number) => {
       setActiveSlideIndex(idx)
       const lineInfo =
         displayMode === "line" && slide.lineIndex && slide.totalLines
           ? { current: slide.lineIndex, total: slide.totalLines }
           : undefined
-      previewSongSlide(slide.songTitle, slide.sectionLabel, slide.text, lineInfo)
+
+      const { isLive: liveOn, autoLive: autoOn } = useBroadcastStore.getState()
+      if (liveOn && autoOn) {
+        presentSongSlide(slide.songTitle, slide.sectionLabel, slide.text, lineInfo)
+      } else {
+        previewSongSlide(slide.songTitle, slide.sectionLabel, slide.text, lineInfo)
+      }
     },
     [displayMode, setActiveSlideIndex]
   )
 
-  // Action: Double-click or Enter -> Live Output
+  // Action: Explicit Live Output (Double-click, Enter, or Play button)
   const handlePresentLive = useCallback(
     (slide: SongSlide, idx: number) => {
       setActiveSlideIndex(idx)
@@ -98,20 +105,20 @@ export function SongWorkAreaPanel() {
     [displayMode, setActiveSlideIndex]
   )
 
-  // Steppers
+  // Steppers: step line-by-line (pushes live if auto+live on, otherwise preview)
   const handlePrevSlide = useCallback(() => {
     if (activeSlideIndex > 0 && slides[activeSlideIndex - 1]) {
       const nextIdx = activeSlideIndex - 1
-      handlePreviewSlide(slides[nextIdx], nextIdx)
+      handleSlideClick(slides[nextIdx], nextIdx)
     }
-  }, [activeSlideIndex, slides, handlePreviewSlide])
+  }, [activeSlideIndex, slides, handleSlideClick])
 
   const handleNextSlide = useCallback(() => {
     if (activeSlideIndex < slides.length - 1 && slides[activeSlideIndex + 1]) {
       const nextIdx = activeSlideIndex + 1
-      handlePreviewSlide(slides[nextIdx], nextIdx)
+      handleSlideClick(slides[nextIdx], nextIdx)
     }
-  }, [activeSlideIndex, slides, handlePreviewSlide])
+  }, [activeSlideIndex, slides, handleSlideClick])
 
   // Keyboard navigation for work area
   const handleKeyDown = useCallback(
@@ -137,8 +144,9 @@ export function SongWorkAreaPanel() {
   )
 
   // Inline editing handlers
-  const handleStartEdit = (slide: SongSlide, e?: React.MouseEvent) => {
+  const handleStartEdit = (slide: SongSlide, idx: number, e?: React.MouseEvent) => {
     e?.stopPropagation()
+    setActiveSlideIndex(idx)
     setEditingSlideId(slide.id)
     setEditingText(slide.text)
     setAutosaveStatus("idle")
@@ -193,14 +201,26 @@ export function SongWorkAreaPanel() {
         .getState()
         .updateSongSectionLyrics(selectedSong.song.id, slide.sectionId, updatedLyrics)
 
-      // If this slide is currently live on screen, update broadcast immediately!
+      // If this slide is currently live on screen (or auto+live is active), update broadcast immediately!
       const currentLiveText = liveVerse?.segments?.[0]?.text
-      if (currentLiveText === slide.text || slides[activeSlideIndex]?.id === slide.id) {
-        const lineInfo =
-          displayMode === "line" && slide.lineIndex && slide.totalLines
-            ? { current: slide.lineIndex, total: slide.totalLines }
-            : undefined
+      const { isLive: liveOn, autoLive: autoOn } = useBroadcastStore.getState()
+      const isCurrentlyLive =
+        currentLiveText === slide.text ||
+        slides[activeSlideIndex]?.id === slide.id ||
+        (liveOn && autoOn && activeSlideIndex === slide.slideIndex)
+
+      const lineInfo =
+        displayMode === "line" && slide.lineIndex && slide.totalLines
+          ? { current: slide.lineIndex, total: slide.totalLines }
+          : undefined
+
+      if (isCurrentlyLive) {
         presentSongSlide(slide.songTitle, slide.sectionLabel, trimmed, lineInfo)
+      } else {
+        const currentPreviewText = previewVerse?.segments?.[0]?.text
+        if (currentPreviewText === slide.text || slides[activeSlideIndex]?.id === slide.id) {
+          previewSongSlide(slide.songTitle, slide.sectionLabel, trimmed, lineInfo)
+        }
       }
 
       setAutosaveStatus("saved")
@@ -415,7 +435,7 @@ export function SongWorkAreaPanel() {
                 <div
                   key={slide.id}
                   data-slide-index={idx}
-                  onClick={() => handlePreviewSlide(slide, idx)}
+                  onClick={() => handleSlideClick(slide, idx)}
                   onDoubleClick={() => handlePresentLive(slide, idx)}
                   className={cn(
                     "group relative flex flex-col rounded-md border p-2 transition-all cursor-pointer",
@@ -427,7 +447,7 @@ export function SongWorkAreaPanel() {
                           ? "border-sky-500/60 bg-sky-500/10 shadow-xs"
                           : "border-border/50 bg-card/60 hover:border-border hover:bg-muted/40"
                   )}
-                  title="Single-click to Preview • Double-click or Enter to Send Live"
+                  title="Click to present (or preview if auto/live is off) • Double-click or Enter to Send Live"
                 >
                   {/* Slide Top Metadata Bar */}
                   <div className="flex items-center justify-between gap-2 mb-1">
@@ -517,7 +537,7 @@ export function SongWorkAreaPanel() {
                             size="icon-xs"
                             className="size-5 text-muted-foreground hover:text-foreground"
                             title="Edit this line"
-                            onClick={(e) => handleStartEdit(slide, e)}
+                            onClick={(e) => handleStartEdit(slide, idx, e)}
                           >
                             <PencilIcon className="size-3 text-lime-400" />
                           </Button>
@@ -528,7 +548,7 @@ export function SongWorkAreaPanel() {
                             title="Preview slide"
                             onClick={(e) => {
                               e.stopPropagation()
-                              handlePreviewSlide(slide, idx)
+                              handleSlideClick(slide, idx)
                             }}
                           >
                             <EyeIcon className="size-3" />

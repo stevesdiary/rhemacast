@@ -125,10 +125,10 @@ export async function updateSong(
   // Refresh songs list in store
   await loadSongs()
 
-  // If this song is currently selected in the store, update it
+  // If this song is currently selected in the store, update it in place without resetting activeSlideIndex
   const currentSelected = useSongsStore.getState().selectedSong
   if (currentSelected?.song.id === song.id) {
-    useSongsStore.getState().selectSong(updated)
+    useSongsStore.setState({ selectedSong: updated })
   }
 
   return updated
@@ -144,16 +144,18 @@ export async function updateSectionLyrics(
     lyrics,
   })
 
-  // If this song is currently selected in the store, keep it updated
+  // If this song is currently selected in the store, update sections in place without resetting activeSlideIndex
   const currentSelected = useSongsStore.getState().selectedSong
   if (currentSelected) {
     const hasSection = currentSelected.sections.some((s) => s.id === sectionId)
     if (hasSection) {
-      useSongsStore.getState().selectSong({
-        ...currentSelected,
-        sections: currentSelected.sections.map((s) =>
-          s.id === sectionId ? { ...s, lyrics } : s
-        ),
+      useSongsStore.setState({
+        selectedSong: {
+          ...currentSelected,
+          sections: currentSelected.sections.map((s) =>
+            s.id === sectionId ? { ...s, lyrics } : s
+          ),
+        },
       })
     }
   }

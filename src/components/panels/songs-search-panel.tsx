@@ -12,7 +12,7 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useQueueStore } from "@/stores"
+import { useQueueStore, useBroadcastStore } from "@/stores"
 import { useSongsStore, loadSongs, searchSongs } from "@/stores/songs-store"
 import { fetchSong } from "@/hooks/use-songs"
 import { previewSongSlide, presentSongSlide } from "@/hooks/use-broadcast"
@@ -93,16 +93,23 @@ function SongSectionRow({
     section.section_number
   )
 
+  const handleClick = () => {
+    const { isLive, autoLive } = useBroadcastStore.getState()
+    if (isLive && autoLive) {
+      presentSongSlide(fullSong.song.title, label, section.lyrics)
+    } else {
+      previewSongSlide(fullSong.song.title, label, section.lyrics)
+    }
+  }
+
   return (
     <div
       className="group flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/40"
-      onClick={() => {
-        previewSongSlide(fullSong.song.title, label, section.lyrics)
-      }}
+      onClick={handleClick}
       onDoubleClick={() => {
         presentSongSlide(fullSong.song.title, label, section.lyrics)
       }}
-      title="Click to preview slide • Double-click to present live"
+      title="Click to preview slide (or push live if auto+live is on) • Double-click to present live"
     >
       <span className="mt-0.5 min-w-[72px] text-[0.6rem] font-medium tracking-wider text-muted-foreground uppercase">
         {label}
