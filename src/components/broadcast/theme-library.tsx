@@ -76,12 +76,27 @@ function ThemeCard({
           </Badge>
         )}
 
-        {/* Pin icon */}
-        {theme.pinned && (
-          <div className="absolute top-1.5 right-1.5 flex size-5 items-center justify-center rounded-full bg-background/80">
-            <HeartIcon className="size-3 text-primary" strokeWidth={2} />
-          </div>
-        )}
+        {/* Pin button on thumbnail */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            useBroadcastStore.getState().togglePinTheme(theme.id)
+          }}
+          className={cn(
+            "absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-full bg-background/80 transition-all hover:bg-background hover:scale-110",
+            theme.pinned ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          )}
+          title={theme.pinned ? "Unpin theme" : "Pin theme"}
+        >
+          <HeartIcon
+            className={cn(
+              "size-3.5",
+              theme.pinned ? "fill-primary text-primary" : "text-muted-foreground"
+            )}
+            strokeWidth={2}
+          />
+        </button>
       </div>
 
       {/* Info */}
@@ -139,13 +154,16 @@ function ThemeCard({
             <Button
               variant="ghost"
               size="icon-xs"
-              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              className={cn(
+                "shrink-0 transition-opacity",
+                isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              )}
               onClick={(e) => e.stopPropagation()}
             >
-              <MoreHorizontalIcon className="size-3" />
+              <MoreHorizontalIcon className="size-3.5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-50">
+          <DropdownMenuContent align="end" className="w-50 z-[100]">
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation()

@@ -214,6 +214,47 @@ describe("broadcast store sync", () => {
     expect(useBroadcastStore.getState().outputStatus["out-b"]).toBeUndefined()
   })
 
+  it("togglePinTheme toggles the pinned state of a theme", async () => {
+    const { useBroadcastStore } = await import("./broadcast-store")
+    const theme = useBroadcastStore.getState().themes[0]
+    const initialPinned = Boolean(theme.pinned)
+
+    useBroadcastStore.getState().togglePinTheme(theme.id)
+    expect(
+      useBroadcastStore.getState().themes.find((t) => t.id === theme.id)?.pinned
+    ).toBe(!initialPinned)
+
+    useBroadcastStore.getState().togglePinTheme(theme.id)
+    expect(
+      useBroadcastStore.getState().themes.find((t) => t.id === theme.id)?.pinned
+    ).toBe(initialPinned)
+  })
+
+  it("deleteTheme removes custom theme and falls back editing/active theme gracefully", async () => {
+    const { useBroadcastStore } = await import("./broadcast-store")
+    const customTheme = {
+      ...useBroadcastStore.getState().themes[0],
+      id: "custom-test-theme-1",
+      name: "Custom Theme",
+      builtin: false,
+    }
+
+    useBroadcastStore.getState().saveTheme(customTheme)
+    useBroadcastStore.setState({
+      activeThemeId: customTheme.id,
+      editingThemeId: customTheme.id,
+      draftTheme: customTheme,
+    })
+
+    useBroadcastStore.getState().deleteTheme(customTheme.id)
+
+    const state = useBroadcastStore.getState()
+    expect(state.themes.some((t) => t.id === customTheme.id)).toBe(false)
+    expect(state.activeThemeId).not.toBe(customTheme.id)
+    expect(state.editingThemeId).not.toBe(customTheme.id)
+    expect(state.draftTheme?.id).not.toBe(customTheme.id)
+  })
+
   it("setActiveTheme updates the main output and its mirror", async () => {
     const { useBroadcastStore } = await import("./broadcast-store")
     const themeB = useBroadcastStore.getState().themes[1]

@@ -203,8 +203,25 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
         ? s.themes.map((t) => (t.id === theme.id ? theme : t))
         : [...s.themes, theme],
     })),
-  deleteTheme: (id) =>
-    set((s) => ({ themes: s.themes.filter((t) => t.id !== id || t.builtin) })),
+  deleteTheme: (id) => {
+    const s = get()
+    const target = s.themes.find((t) => t.id === id)
+    if (!target || target.builtin) return
+
+    const remainingThemes = s.themes.filter((t) => t.id !== id)
+    const fallbackTheme = remainingThemes[0] ?? BUILTIN_THEMES[0]
+
+    const nextActiveId = s.activeThemeId === id ? fallbackTheme.id : s.activeThemeId
+    const nextEditingId = s.editingThemeId === id ? fallbackTheme.id : s.editingThemeId
+    const nextDraft = s.editingThemeId === id ? fallbackTheme : s.draftTheme
+
+    set({
+      themes: remainingThemes,
+      activeThemeId: nextActiveId,
+      editingThemeId: nextEditingId,
+      draftTheme: nextDraft,
+    })
+  },
   duplicateTheme: (id) => {
     const s = get()
     const source = s.themes.find((t) => t.id === id)
