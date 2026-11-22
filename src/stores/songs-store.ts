@@ -143,6 +143,20 @@ export async function updateSectionLyrics(
     sectionId,
     lyrics,
   })
+
+  // If this song is currently selected in the store, keep it updated
+  const currentSelected = useSongsStore.getState().selectedSong
+  if (currentSelected) {
+    const hasSection = currentSelected.sections.some((s) => s.id === sectionId)
+    if (hasSection) {
+      useSongsStore.getState().selectSong({
+        ...currentSelected,
+        sections: currentSelected.sections.map((s) =>
+          s.id === sectionId ? { ...s, lyrics } : s
+        ),
+      })
+    }
+  }
 }
 
 /** Queue a song (or specific section) for presentation */

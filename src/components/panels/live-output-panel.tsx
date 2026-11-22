@@ -56,7 +56,7 @@ export function LiveOutputPanel() {
     <div
       data-slot="live-output-panel"
       className={cn(
-        "flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card",
+        "flex h-full w-full min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card",
         isLive && "shadow-[inset_0_2px_0_0_rgba(16,185,129,0.3)]"
       )}
     >
@@ -99,11 +99,11 @@ export function LiveOutputPanel() {
 
       <div
         className={cn(
-          "flex min-h-0 flex-1 items-center justify-center p-3 transition-opacity",
+          "flex h-full w-full min-h-0 flex-1 items-center justify-center p-2 transition-opacity",
           !isLive && "opacity-40"
         )}
       >
-        <CanvasVerse theme={activeTheme} verse={verseData} />
+        <CanvasVerse theme={activeTheme} verse={verseData} className="h-full w-full" />
       </div>
     </div>
   )

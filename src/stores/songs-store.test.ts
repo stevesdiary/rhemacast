@@ -7,6 +7,7 @@ import {
   getSong,
   createSong,
   queueSong,
+  updateSectionLyrics,
 } from "./songs-store"
 import type {
   Song,
@@ -184,5 +185,21 @@ describe("songs-store", () => {
     })
     expect(result).toEqual(sampleSongWithSections)
     expect(useSongsStore.getState().songs).toEqual([sampleSong])
+  })
+
+  it("updates section lyrics and keeps selectedSong synchronized", async () => {
+    mockInvoke.mockResolvedValueOnce(undefined) // for update_section_lyrics
+    useSongsStore.getState().selectSong(sampleSongWithSections)
+
+    await updateSectionLyrics(10, "New lyrics for verse 1")
+
+    expect(mockInvoke).toHaveBeenCalledWith("update_section_lyrics", {
+      sectionId: 10,
+      lyrics: "New lyrics for verse 1",
+    })
+    const selected = useSongsStore.getState().selectedSong
+    expect(selected?.sections.find((s) => s.id === 10)?.lyrics).toBe(
+      "New lyrics for verse 1"
+    )
   })
 })

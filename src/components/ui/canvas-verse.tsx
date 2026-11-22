@@ -17,16 +17,26 @@ export const CanvasVerse = memo(function CanvasVerse({
 }: CanvasVerseProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [containerWidth, setContainerWidth] = useState(0)
+  const [containerSize, setContainerSize] = useState<{
+    width: number
+    height: number
+  }>({ width: 0, height: 0 })
 
-  // Measure container width with ResizeObserver
+  // Measure container dimensions with ResizeObserver
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
     const observer = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width ?? 0
-      if (w > 0) setContainerWidth(w)
+      const rect = entries[0]?.contentRect
+      if (!rect) return
+      const w = Math.floor(rect.width)
+      const h = Math.floor(rect.height)
+      if (w > 0) {
+        setContainerSize((prev) =>
+          prev.width === w && prev.height === h ? prev : { width: w, height: h }
+        )
+      }
     })
     observer.observe(container)
     return () => observer.disconnect()
@@ -34,17 +44,27 @@ export const CanvasVerse = memo(function CanvasVerse({
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current
-    if (!canvas || containerWidth === 0) return
+    if (!canvas || containerSize.width === 0) return
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
     const dpr = window.devicePixelRatio || 1
     const aspectRatio = theme.resolution.width / theme.resolution.height
-    const displayW = containerWidth
-    const displayH = displayW / aspectRatio
 
-    canvas.width = displayW * dpr
-    canvas.height = displayH * dpr
+    // Calculate maximum dimensions that fit inside the container while preserving aspect ratio
+    let displayW = containerSize.width
+    let displayH = displayW / aspectRatio
+
+    if (containerSize.height > 0 && displayH > containerSize.height) {
+      displayH = containerSize.height
+      displayW = displayH * aspectRatio
+    }
+
+    displayW = Math.max(1, Math.floor(displayW))
+    displayH = Math.max(1, Math.floor(displayH))
+
+    canvas.width = Math.round(displayW * dpr)
+    canvas.height = Math.round(displayH * dpr)
     canvas.style.width = `${displayW}px`
     canvas.style.height = `${displayH}px`
 
@@ -54,7 +74,7 @@ export const CanvasVerse = memo(function CanvasVerse({
       scale,
       imageCache: themeImageCache(),
     })
-  }, [theme, verse, containerWidth])
+  }, [theme, verse, containerSize])
 
   // Preload every image the theme uses so the renderer finds them in the cache.
   useEffect(() => {
@@ -71,8 +91,14 @@ export const CanvasVerse = memo(function CanvasVerse({
   useEffect(() => onThemeFontsLoaded(() => draw()), [draw])
 
   return (
-    <div ref={containerRef} className={cn("w-full", className)}>
-      <canvas ref={canvasRef} className="w-full rounded-md" />
+    <div
+      ref={containerRef}
+      className={cn(
+        "flex h-full w-full min-h-0 min-w-0 items-center justify-center overflow-hidden",
+        className
+      )}
+    >
+      <canvas ref={canvasRef} className="rounded-md shadow-xs block" />
     </div>
   )
 })

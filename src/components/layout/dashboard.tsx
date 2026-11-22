@@ -31,7 +31,7 @@ export function Dashboard() {
           <ResizablePanel
             defaultSize="45%"
             minSize="20%"
-            className="flex min-h-0 flex-col"
+            className="flex min-h-0 flex-1 flex-col"
           >
             <ResizablePanelGroup
               orientation="horizontal"
@@ -40,7 +40,7 @@ export function Dashboard() {
               <ResizablePanel
                 defaultSize="22%"
                 minSize="14%"
-                className="flex min-h-0 flex-col p-1"
+                className="flex h-full min-h-0 min-w-0 flex-1 flex-col p-1"
               >
                 <TranscriptPanel />
               </ResizablePanel>
@@ -48,7 +48,7 @@ export function Dashboard() {
               <ResizablePanel
                 defaultSize="28%"
                 minSize="18%"
-                className="flex min-h-0 flex-col p-1"
+                className="flex h-full min-h-0 min-w-0 flex-1 flex-col p-1"
               >
                 <PreviewPanel />
               </ResizablePanel>
@@ -56,7 +56,7 @@ export function Dashboard() {
               <ResizablePanel
                 defaultSize="28%"
                 minSize="18%"
-                className="flex min-h-0 flex-col p-1"
+                className="flex h-full min-h-0 min-w-0 flex-1 flex-col p-1"
               >
                 <LiveOutputPanel />
               </ResizablePanel>
@@ -64,7 +64,7 @@ export function Dashboard() {
               <ResizablePanel
                 defaultSize="22%"
                 minSize="14%"
-                className="flex min-h-0 flex-col p-1"
+                className="flex h-full min-h-0 min-w-0 flex-1 flex-col p-1"
               >
                 <QueuePanel />
               </ResizablePanel>
@@ -77,7 +77,7 @@ export function Dashboard() {
           <ResizablePanel
             defaultSize="55%"
             minSize="20%"
-            className="flex min-h-0 flex-col"
+            className="flex min-h-0 flex-1 flex-col"
           >
             <ResizablePanelGroup
               orientation="horizontal"
@@ -86,7 +86,7 @@ export function Dashboard() {
               <ResizablePanel
                 defaultSize="38%"
                 minSize="20%"
-                className="flex min-h-0 flex-col p-1"
+                className="flex h-full min-h-0 min-w-0 flex-1 flex-col p-1"
               >
                 <SearchPanel />
               </ResizablePanel>
@@ -94,7 +94,7 @@ export function Dashboard() {
               <ResizablePanel
                 defaultSize="38%"
                 minSize="20%"
-                className="flex min-h-0 flex-col p-1"
+                className="flex h-full min-h-0 min-w-0 flex-1 flex-col p-1"
               >
                 <SongsSearchPanel />
               </ResizablePanel>
@@ -102,7 +102,7 @@ export function Dashboard() {
               <ResizablePanel
                 defaultSize="24%"
                 minSize="14%"
-                className="flex min-h-0 flex-col p-1"
+                className="flex h-full min-h-0 min-w-0 flex-1 flex-col p-1"
               >
                 <DetectionsPanel />
               </ResizablePanel>

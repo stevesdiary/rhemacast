@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { PlusIcon, Trash2Icon, SparklesIcon, MusicIcon } from "lucide-react"
+import { PlusIcon, Trash2Icon, SparklesIcon, MusicIcon, CheckIcon } from "lucide-react"
 import { toast } from "sonner"
 import { updateSong } from "@/stores/songs-store"
 import { useQueueStore } from "@/stores"
@@ -139,6 +139,53 @@ export function EditSongDialog({
   const [sections, setSections] = useState<EditableSection[]>([])
   const [rawPasteText, setRawPasteText] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved">("idle")
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isDirtyRef = useRef(false)
+
+  const latestStateRef = useRef({
+    title,
+    author,
+    composer,
+    copyright,
+    ccli,
+    themesStr,
+    sections,
+    rawPasteText,
+    activeTab,
+  })
+
+  useEffect(() => {
+    latestStateRef.current = {
+      title,
+      author,
+      composer,
+      copyright,
+      ccli,
+      themesStr,
+      sections,
+      rawPasteText,
+      activeTab,
+    }
+  }, [
+    title,
+    author,
+    composer,
+    copyright,
+    ccli,
+    themesStr,
+    sections,
+    rawPasteText,
+    activeTab,
+  ])
+
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current)
+      }
+    }
+  }, [])
 
   // Reset/populate form whenever the dialog opens with a new song
   useEffect(() => {
@@ -159,59 +206,21 @@ export function EditSongDialog({
     }))
     setSections(initialSections)
     setRawPasteText(sectionsToRawText(initialSections))
+    isDirtyRef.current = false
+    setAutosaveStatus("idle")
   }, [song, open])
 
-  const handleAddSection = () => {
-    const nextNumber =
-      sections.filter((s) => s.section_type === "verse").length + 1
-    setSections((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        section_type: "verse" as SectionType,
-        section_number: nextNumber,
-        lyrics: "",
-      },
-    ])
-  }
-
-  const handleRemoveSection = (id: string) => {
-    setSections((prev) => prev.filter((s) => s.id !== id))
-  }
-
-  const handleUpdateSection = (
-    id: string,
-    updates: Partial<Omit<EditableSection, "id">>
-  ) => {
-    setSections((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
-    )
-  }
-
-  const handleSmartPasteParse = useCallback(() => {
-    if (!rawPasteText.trim()) return
-    const parsed = parsePastedLyrics(rawPasteText)
-    if (parsed.length > 0) {
-      setSections(parsed)
-      setActiveTab("builder")
-      toast.success(
-        `Parsed ${parsed.length} sections (${parsed.map((p) => p.section_type).join(", ")})`
-      )
-    } else {
-      toast.error("No sections could be parsed from the pasted lyrics")
-    }
-  }, [rawPasteText])
-
-  const handleSave = async () => {
+  const persistChanges = async (closeOnDone = false) => {
     if (!song) return
-    if (!title.trim()) {
-      toast.error("Song title is required")
+    const state = latestStateRef.current
+    if (!state.title.trim()) {
+      if (closeOnDone) toast.error("Song title is required")
       return
     }
 
-    let finalSections = sections
-    if (activeTab === "paste" && rawPasteText.trim()) {
-      const parsed = parsePastedLyrics(rawPasteText)
+    let finalSections = state.sections
+    if (state.activeTab === "paste" && state.rawPasteText.trim()) {
+      const parsed = parsePastedLyrics(state.rawPasteText)
       if (parsed.length > 0) {
         finalSections = parsed
       }
@@ -221,13 +230,14 @@ export function EditSongDialog({
       (s) => s.lyrics.trim().length > 0
     )
     if (validSections.length === 0) {
-      toast.error("Please add at least one section with lyrics")
+      if (closeOnDone) toast.error("Please add at least one section with lyrics")
       return
     }
 
     setIsSaving(true)
+    setAutosaveStatus("saving")
     try {
-      const themes = themesStr
+      const themes = state.themesStr
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean)
@@ -244,11 +254,11 @@ export function EditSongDialog({
       const updated = await updateSong(
         {
           id: song.song.id,
-          title: title.trim(),
-          author: author.trim() || null,
-          composer: composer.trim() || null,
-          copyright: copyright.trim() || null,
-          ccli_number: ccli.trim() || null,
+          title: state.title.trim(),
+          author: state.author.trim() || null,
+          composer: state.composer.trim() || null,
+          copyright: state.copyright.trim() || null,
+          ccli_number: state.ccli.trim() || null,
           themes,
         },
         payloadSections
@@ -256,25 +266,101 @@ export function EditSongDialog({
 
       // Sync with schedule queue so any active service item updates immediately
       useQueueStore.getState().updateSongInQueue(updated)
-
-      toast.success("Song Updated", {
-        description: `"${updated.song.title}" saved to library & schedule.`,
-      })
-
       onSaved?.(updated)
-      onOpenChange(false)
+      isDirtyRef.current = false
+      setAutosaveStatus("saved")
+
+      if (closeOnDone) {
+        toast.success("Song Updated", {
+          description: `"${updated.song.title}" saved to library & schedule.`,
+        })
+        onOpenChange(false)
+      }
     } catch (err) {
       console.error(err)
-      toast.error("Failed to update song", {
-        description: String(err),
-      })
+      if (closeOnDone) {
+        toast.error("Failed to update song", {
+          description: String(err),
+        })
+      }
+      setAutosaveStatus("idle")
     } finally {
       setIsSaving(false)
     }
   }
 
+  const triggerAutosave = () => {
+    isDirtyRef.current = true
+    setAutosaveStatus("idle")
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current)
+    }
+    autosaveTimerRef.current = setTimeout(() => {
+      void persistChanges(false)
+    }, 800)
+  }
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && isDirtyRef.current) {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current)
+      }
+      void persistChanges(false)
+    }
+    onOpenChange(nextOpen)
+  }
+
+  const handleAddSection = () => {
+    const nextNumber =
+      sections.filter((s) => s.section_type === "verse").length + 1
+    setSections((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        section_type: "verse" as SectionType,
+        section_number: nextNumber,
+        lyrics: "",
+      },
+    ])
+    triggerAutosave()
+  }
+
+  const handleRemoveSection = (id: string) => {
+    setSections((prev) => prev.filter((s) => s.id !== id))
+    triggerAutosave()
+  }
+
+  const handleUpdateSection = (
+    id: string,
+    updates: Partial<Omit<EditableSection, "id">>
+  ) => {
+    setSections((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...updates } : s))
+    )
+    triggerAutosave()
+  }
+
+  const handleSmartPasteParse = useCallback(() => {
+    if (!rawPasteText.trim()) return
+    const parsed = parsePastedLyrics(rawPasteText)
+    if (parsed.length > 0) {
+      setSections(parsed)
+      setActiveTab("builder")
+      triggerAutosave()
+      toast.success(
+        `Parsed ${parsed.length} sections (${parsed.map((p) => p.section_type).join(", ")})`
+      )
+    } else {
+      toast.error("No sections could be parsed from the pasted lyrics")
+    }
+  }, [rawPasteText])
+
+  const handleSave = () => {
+    void persistChanges(true)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <div className="flex items-center gap-2 text-primary">
@@ -297,7 +383,10 @@ export function EditSongDialog({
               <Input
                 placeholder="e.g. Amazing Grace"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => {
+                  setTitle(e.target.value)
+                  triggerAutosave()
+                }}
               />
             </div>
 
@@ -308,7 +397,10 @@ export function EditSongDialog({
               <Input
                 placeholder="e.g. John Newton"
                 value={author}
-                onChange={(e) => setAuthor(e.target.value)}
+                onChange={(e) => {
+                  setAuthor(e.target.value)
+                  triggerAutosave()
+                }}
               />
             </div>
 
@@ -319,7 +411,10 @@ export function EditSongDialog({
               <Input
                 placeholder="e.g. Traditional"
                 value={composer}
-                onChange={(e) => setComposer(e.target.value)}
+                onChange={(e) => {
+                  setComposer(e.target.value)
+                  triggerAutosave()
+                }}
               />
             </div>
 
@@ -330,7 +425,10 @@ export function EditSongDialog({
               <Input
                 placeholder="e.g. 22025"
                 value={ccli}
-                onChange={(e) => setCcli(e.target.value)}
+                onChange={(e) => {
+                  setCcli(e.target.value)
+                  triggerAutosave()
+                }}
               />
             </div>
 
@@ -341,7 +439,10 @@ export function EditSongDialog({
               <Input
                 placeholder="e.g. Grace, Salvation, Faith"
                 value={themesStr}
-                onChange={(e) => setThemesStr(e.target.value)}
+                onChange={(e) => {
+                  setThemesStr(e.target.value)
+                  triggerAutosave()
+                }}
               />
             </div>
           </div>
@@ -468,7 +569,10 @@ export function EditSongDialog({
                 <Textarea
                   placeholder={`[Verse 1]\nAmazing grace! How sweet the sound\nThat saved a wretch like me!\n\n[Chorus]\nAmazing grace, how sweet the sound...`}
                   value={rawPasteText}
-                  onChange={(e) => setRawPasteText(e.target.value)}
+                  onChange={(e) => {
+                    setRawPasteText(e.target.value)
+                    triggerAutosave()
+                  }}
                   rows={8}
                   className="font-mono text-xs leading-relaxed"
                 />
@@ -487,17 +591,33 @@ export function EditSongDialog({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSaving}
-          >
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving} className="gap-1.5">
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
+        <DialogFooter className="flex items-center justify-between gap-2 sm:justify-between">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {autosaveStatus === "saving" && (
+              <span className="italic">Autosaving to songlist...</span>
+            )}
+            {autosaveStatus === "saved" && (
+              <span className="flex items-center gap-1 font-medium text-emerald-400">
+                <CheckIcon className="size-3.5" /> Autosaved to songlist
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={isSaving}
+            >
+              Done
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="gap-1.5"
+            >
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest"
 import { useQueueStore } from "./queue-store"
-import type { VerseQueueItem } from "@/types"
+import type { VerseQueueItem, SongQueueItem, SongWithSections, SectionType } from "@/types"
 import type { Verse } from "@/types"
 
 function makeVerse(overrides: Partial<Verse> = {}): Verse {
@@ -122,5 +122,85 @@ describe("backfillText", () => {
     expect(
       getVerseText(useQueueStore.getState().items[0] as VerseQueueItem)
     ).toBe("")
+  })
+})
+
+describe("updateSongSectionLyrics and updateSongInQueue", () => {
+  const sampleSong: SongWithSections = {
+    song: {
+      id: 5,
+      title: "Blessed Assurance",
+      author: "Fanny Crosby",
+      composer: "Phoebe Knapp",
+      copyright: null,
+      ccli_number: null,
+      themes: ["assurance"],
+    },
+    sections: [
+      {
+        id: 50,
+        song_id: 5,
+        section_type: "verse" as SectionType,
+        section_number: 1,
+        lyrics: "Blessed assurance, Jesus is mine",
+        order_index: 1,
+      },
+    ],
+  }
+
+  it("updates song section lyrics in queue items", () => {
+    const songItem: SongQueueItem = {
+      id: "song-item-1",
+      type: "song",
+      song: sampleSong,
+      section: sampleSong.sections[0],
+      reference: "Blessed Assurance",
+      source: "manual",
+      added_at: 1000,
+    }
+
+    useQueueStore.getState().addItem(songItem)
+    useQueueStore
+      .getState()
+      .updateSongSectionLyrics(5, 50, "Updated lyrics line 1\nUpdated lyrics line 2")
+
+    const updatedItem = useQueueStore.getState().items[0] as SongQueueItem
+    expect(updatedItem.song.sections[0].lyrics).toBe(
+      "Updated lyrics line 1\nUpdated lyrics line 2"
+    )
+    expect(updatedItem.section?.lyrics).toBe(
+      "Updated lyrics line 1\nUpdated lyrics line 2"
+    )
+  })
+
+  it("updates entire song in queue when updateSongInQueue is called", () => {
+    const songItem: SongQueueItem = {
+      id: "song-item-1",
+      type: "song",
+      song: sampleSong,
+      section: sampleSong.sections[0],
+      reference: "Blessed Assurance",
+      source: "manual",
+      added_at: 1000,
+    }
+
+    useQueueStore.getState().addItem(songItem)
+
+    const revisedSong: SongWithSections = {
+      ...sampleSong,
+      song: { ...sampleSong.song, title: "Blessed Assurance (Revised)" },
+      sections: [
+        {
+          ...sampleSong.sections[0],
+          lyrics: "Brand new stanza lyrics",
+        },
+      ],
+    }
+
+    useQueueStore.getState().updateSongInQueue(revisedSong)
+
+    const updatedItem = useQueueStore.getState().items[0] as SongQueueItem
+    expect(updatedItem.song.song.title).toBe("Blessed Assurance (Revised)")
+    expect(updatedItem.song.sections[0].lyrics).toBe("Brand new stanza lyrics")
   })
 })

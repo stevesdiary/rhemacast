@@ -101,6 +101,16 @@ function ActiveSongStepper({
   const [editingSlideId, setEditingSlideId] = useState<string | null>(null)
   const [editingText, setEditingText] = useState("")
   const [isSavingInline, setIsSavingInline] = useState(false)
+  const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved">("idle")
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (autosaveTimerRef.current) {
+        clearTimeout(autosaveTimerRef.current)
+      }
+    }
+  }, [])
 
   // Scroll the active slide into view smoothly
   useEffect(() => {
@@ -144,19 +154,34 @@ function ActiveSongStepper({
     e?.stopPropagation()
     setEditingSlideId(slide.id)
     setEditingText(slide.text)
+    setAutosaveStatus("idle")
   }
 
   const handleCancelEdit = (e?: React.MouseEvent) => {
     e?.stopPropagation()
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current)
+    }
     setEditingSlideId(null)
     setEditingText("")
+    setAutosaveStatus("idle")
   }
 
-  const handleSaveInline = async (slide: SongSlide, e?: React.MouseEvent) => {
+  const handleSaveInline = async (
+    slide: SongSlide,
+    closeAfter = true,
+    e?: React.MouseEvent
+  ) => {
     e?.stopPropagation()
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current)
+    }
+
     const trimmed = editingText.trim()
     if (!trimmed) {
-      toast.error("Lyrics text cannot be empty")
+      if (closeAfter) {
+        toast.error("Lyrics text cannot be empty")
+      }
       return
     }
 
@@ -183,6 +208,7 @@ function ActiveSongStepper({
     }
 
     setIsSavingInline(true)
+    setAutosaveStatus("saving")
     try {
       await updateSectionLyrics(slide.sectionId, updatedLyrics)
       useQueueStore
@@ -202,14 +228,36 @@ function ActiveSongStepper({
         presentSongSlide(slide.songTitle, slide.sectionLabel, trimmed, lineInfo)
       }
 
-      toast.success("Lyrics updated live")
-      setEditingSlideId(null)
+      setAutosaveStatus("saved")
+      if (closeAfter) {
+        toast.success("Lyrics updated & autosaved to songlist")
+        setEditingSlideId(null)
+      }
     } catch (err) {
       console.error(err)
       toast.error("Failed to update lyrics", { description: String(err) })
+      setAutosaveStatus("idle")
     } finally {
       setIsSavingInline(false)
     }
+  }
+
+  const handleTextChange = (slide: SongSlide, text: string) => {
+    setEditingText(text)
+    setAutosaveStatus("idle")
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current)
+    }
+    autosaveTimerRef.current = setTimeout(() => {
+      void handleSaveInline(slide, false)
+    }, 600)
+  }
+
+  const handleBlur = (slide: SongSlide) => {
+    if (autosaveTimerRef.current) {
+      clearTimeout(autosaveTimerRef.current)
+    }
+    void handleSaveInline(slide, true)
   }
 
   const currentSlide = slides[activeSlideIndex] ?? slides[0]
@@ -283,7 +331,7 @@ function ActiveSongStepper({
       {/* Interactive Slides List */}
       <div
         ref={slideListRef}
-        className="flex max-h-48 flex-col gap-1 overflow-y-auto rounded border border-border/50 bg-background/60 p-1"
+        className="flex min-h-[5rem] max-h-60 flex-1 flex-col gap-1 overflow-y-auto rounded border border-border/50 bg-background/60 p-1"
       >
         {slides.map((slide, idx) => {
           const isLiveSlide = idx === activeSlideIndex
@@ -332,11 +380,12 @@ function ActiveSongStepper({
                     {mode === "line" ? (
                       <Input
                         value={editingText}
-                        onChange={(e) => setEditingText(e.target.value)}
+                        onChange={(e) => handleTextChange(slide, e.target.value)}
+                        onBlur={() => handleBlur(slide)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             e.preventDefault()
-                            void handleSaveInline(slide)
+                            void handleSaveInline(slide, true)
                           } else if (e.key === "Escape") {
                             handleCancelEdit()
                           }
@@ -348,11 +397,12 @@ function ActiveSongStepper({
                     ) : (
                       <Textarea
                         value={editingText}
-                        onChange={(e) => setEditingText(e.target.value)}
+                        onChange={(e) => handleTextChange(slide, e.target.value)}
+                        onBlur={() => handleBlur(slide)}
                         onKeyDown={(e) => {
                           if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
                             e.preventDefault()
-                            void handleSaveInline(slide)
+                            void handleSaveInline(slide, true)
                           } else if (e.key === "Escape") {
                             handleCancelEdit()
                           }
@@ -363,31 +413,37 @@ function ActiveSongStepper({
                         className="bg-background p-1.5 text-xs"
                       />
                     )}
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        className="h-5 w-5"
-                        onClick={handleCancelEdit}
-                        title="Cancel (Esc)"
-                      >
-                        <XIcon className="size-3 text-muted-foreground" />
-                      </Button>
-                      <Button
-                        variant="default"
-                        size="xs"
-                        disabled={isSavingInline}
-                        className="h-5 gap-1 bg-emerald-600 px-1.5 text-[0.65rem] hover:bg-emerald-500"
-                        onClick={(e) => handleSaveInline(slide, e)}
-                        title={
-                          mode === "line"
-                            ? "Save & apply (Enter)"
-                            : "Save & apply (Ctrl+Enter)"
-                        }
-                      >
-                        <CheckIcon className="size-2.5" />
-                        Save
-                      </Button>
+                    <div className="flex items-center justify-between gap-1 text-[0.6rem] text-muted-foreground">
+                      <span className="italic">
+                        {autosaveStatus === "saving" && "Autosaving..."}
+                        {autosaveStatus === "saved" && "Autosaved ✓"}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          className="h-5 w-5"
+                          onClick={handleCancelEdit}
+                          title="Cancel (Esc)"
+                        >
+                          <XIcon className="size-3 text-muted-foreground" />
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="xs"
+                          disabled={isSavingInline}
+                          className="h-5 gap-1 bg-emerald-600 px-1.5 text-[0.65rem] hover:bg-emerald-500"
+                          onClick={(e) => void handleSaveInline(slide, true, e)}
+                          title={
+                            mode === "line"
+                              ? "Save & apply (Enter)"
+                              : "Save & apply (Ctrl+Enter)"
+                          }
+                        >
+                          <CheckIcon className="size-2.5" />
+                          Save
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ) : (
@@ -735,7 +791,7 @@ export function QueuePanel() {
   return (
     <div
       data-slot="queue-panel"
-      className="flex flex-col overflow-hidden rounded-lg border border-border bg-card"
+      className="flex h-full w-full min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card"
     >
       <PanelHeader title="Schedule">
         <div className="flex items-center gap-1.5">
