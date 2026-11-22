@@ -279,13 +279,13 @@ const TRANSLATIONS_META: Array<{
   //   language: "en",
   //   license: "Public Domain",
   // },
-  // {
-  //   file: "KJ21.json",
-  //   abbreviation: "KJ21",
-  //   title: "21st Century King James Version",
-  //   language: "en",
-  //   license: "Deuel Enterprises",
-  // },
+  {
+    file: "KJ21.json",
+    abbreviation: "KJ21",
+    title: "21st Century King James Version",
+    language: "en",
+    license: "Deuel Enterprises",
+  },
   {
     file: "KJV.json",
     abbreviation: "KJV",
@@ -399,23 +399,9 @@ const TRANSLATIONS_META: Array<{
   //   license: "Christian Literature International",
   // },
   // {
-  //   file: "NOG.json",
-  //   abbreviation: "NOG",
-  //   title: "Names of God Bible",
-  //   language: "en",
-  //   license: "Baker Publishing Group",
-  // },
-  // {
   //   file: "NRSV.json",
   //   abbreviation: "NRSV",
   //   title: "New Revised Standard Version",
-  //   language: "en",
-  //   license: "National Council of Churches",
-  // },
-  // {
-  //   file: "NRSVUE.json",
-  //   abbreviation: "NRSVUE",
-  //   title: "New Revised Standard Version Updated Edition",
   //   language: "en",
   //   license: "National Council of Churches",
   // },
@@ -427,62 +413,26 @@ const TRANSLATIONS_META: Array<{
     license: "National Council of Churches",
   },
   {
+    file: "MSG.json",
+    abbreviation: "MSG",
+    title: "The Message",
+    language: "en",
+    license: "NavPress",
+  },
+  {
+    file: "TLB.json",
+    abbreviation: "TLB",
+    title: "The Living Bible",
+    language: "en",
+    license: "Tyndale House",
+  },
+  {
     file: "TPT.json",
     abbreviation: "TPT",
     title: "The Passion Translation",
     language: "en",
     license: "BroadStreet Publishing",
-  },
-  // {
-  //   file: "WEB.json",
-  //   abbreviation: "WEB",
-  //   title: "World English Bible",
-  //   language: "en",
-  //   license: "Public Domain",
-  // },
-  // {
-  //   file: "YLT.json",
-  //   abbreviation: "YLT",
-  //   title: "Young's Literal Translation",
-  //   language: "en",
-  //   license: "Public Domain",
-  // },
-
-  // Spanish
-  // {
-  //   file: "SpaRV.json",
-  //   abbreviation: "SpaRV",
-  //   title: "Reina-Valera 1909",
-  //   language: "es",
-  //   license: "Public Domain",
-  // },
-
-  // // French
-  // {
-  //   file: "FreJND.json",
-  //   abbreviation: "FreJND",
-  //   title: "J.N. Darby French 1885",
-  //   language: "fr",
-  //   license: "Public Domain",
-  // },
-
-  // Portuguese
-  // {
-  //   file: "PorBLivre.json",
-  //   abbreviation: "PorBLivre",
-  //   title: "Bíblia Livre",
-  //   language: "pt",
-  //   license: "Public Domain",
-  // },
-
-  // // Afrikaans
-  // {
-  //   file: "AFR53.json",
-  //   abbreviation: "AFR53",
-  //   title: "Afrikaanse Bybel 1953",
-  //   language: "af",
-  //   license: "Unknown",
-  // },
+  }
 ]
 
 function main() {

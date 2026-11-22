@@ -13,6 +13,7 @@
     "tauri": "tauri",
     "test": "vitest",
     "download:bible-data": "bun run data/download-sources.ts",
+    "import:bible": "bun run data/import-bible-json.ts",
     "build:bible": "bun run data/build-bible-db.ts",
     "seed:songs": "bun run data/seed-songs.ts",
     "download:model": "bun run data/download-model.ts",

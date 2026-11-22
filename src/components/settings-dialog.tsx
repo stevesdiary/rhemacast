@@ -19,6 +19,8 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
@@ -44,6 +46,11 @@ import {
   HelpCircleIcon,
   GraduationCapIcon,
   BrainCircuitIcon,
+  PlusIcon,
+  Trash2Icon,
+  UploadIcon,
+  Loader2Icon,
+  AlertCircleIcon,
 } from "lucide-react"
 import { LevelMeter } from "@/components/ui/level-meter"
 import { useAudioTest } from "@/hooks/use-audio-test"
@@ -583,37 +590,53 @@ interface TranslationInfo {
   abbreviation: string
   title: string
   language: string
+  is_user_imported?: boolean
 }
 
 function BibleSection() {
   const [translations, setTranslations] = useState<TranslationInfo[]>([])
   const [activeId, setActiveId] = useState<number>(1)
   const [loading, setLoading] = useState(true)
+  const [isImportOpen, setIsImportOpen] = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+
+  // Import form state
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importJson, setImportJson] = useState<string>("")
+  const [importAbbrev, setImportAbbrev] = useState("")
+  const [importTitle, setImportTitle] = useState("")
+  const [importLang, setImportLang] = useState("en")
+  const [importLicense, setImportLicense] = useState("")
+  const [importError, setImportError] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const reloadTranslations = useCallback(async () => {
+    try {
+      const [trans, active] = await Promise.all([
+        invoke<TranslationInfo[]>("list_translations"),
+        invoke<number>("get_active_translation"),
+      ])
+      setTranslations(trans)
+      setActiveId(active)
+      const { useBibleStore } = await import("@/stores")
+      useBibleStore.getState().setTranslations(trans as any)
+    } catch (e) {
+      console.error("Failed to load translations:", e)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [trans, active] = await Promise.all([
-          invoke<TranslationInfo[]>("list_translations"),
-          invoke<number>("get_active_translation"),
-        ])
-        setTranslations(trans)
-        setActiveId(active)
-      } catch (e) {
-        console.error("Failed to load translations:", e)
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [])
+    reloadTranslations()
+  }, [reloadTranslations])
 
   const handleChange = async (value: string) => {
     const id = parseInt(value)
     try {
       await invoke("set_active_translation", { translationId: id })
       setActiveId(id)
-      // Update frontend stores so all panels use the new translation
       const { useBibleStore } = await import("@/stores")
       useBibleStore.getState().setActiveTranslation(id)
     } catch (e) {
@@ -621,11 +644,107 @@ function BibleSection() {
     }
   }
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setImportFile(file)
+    setImportError(null)
+
+    try {
+      const text = await file.text()
+      setImportJson(text)
+
+      try {
+        const parsed = JSON.parse(text)
+        let suggestedAbbrev = ""
+        let suggestedTitle = ""
+        let suggestedLang = "en"
+
+        if (parsed.translation) suggestedAbbrev = String(parsed.translation).toUpperCase()
+        if (parsed.title) suggestedTitle = String(parsed.title)
+        if (parsed.language) suggestedLang = String(parsed.language).toLowerCase()
+
+        if (!suggestedAbbrev) {
+          suggestedAbbrev = file.name.replace(/\.json$/i, "").slice(0, 8).toUpperCase()
+        }
+        if (!suggestedTitle) {
+          suggestedTitle = suggestedAbbrev
+        }
+
+        setImportAbbrev(suggestedAbbrev)
+        setImportTitle(suggestedTitle)
+        setImportLang(suggestedLang)
+      } catch {
+        const namePart = file.name.replace(/\.json$/i, "").slice(0, 8).toUpperCase()
+        setImportAbbrev(namePart)
+        setImportTitle(namePart)
+      }
+    } catch (err: any) {
+      setImportError(`Failed to read file: ${err?.message || String(err)}`)
+    }
+  }
+
+  const handleImportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!importJson || !importAbbrev.trim() || !importTitle.trim()) {
+      setImportError("Please select a valid JSON file and provide an abbreviation and title.")
+      return
+    }
+
+    setImporting(true)
+    setImportError(null)
+
+    try {
+      const imported = await invoke<TranslationInfo>("import_bible_translation", {
+        abbreviation: importAbbrev.trim().toUpperCase(),
+        title: importTitle.trim(),
+        language: importLang.trim().toLowerCase() || "en",
+        license: importLicense.trim() || "Custom",
+        jsonContent: importJson,
+      })
+
+      await reloadTranslations()
+      await handleChange(String(imported.id))
+
+      setIsImportOpen(false)
+      setImportFile(null)
+      setImportJson("")
+      setImportAbbrev("")
+      setImportTitle("")
+      setImportLicense("")
+    } catch (err: any) {
+      setImportError(String(err))
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const handleDelete = async (id: number, title: string, abbrev: string) => {
+    if (!window.confirm(`Are you sure you want to remove ${title} (${abbrev})?`)) {
+      return
+    }
+    setDeletingId(id)
+    try {
+      await invoke("delete_user_translation", { translationId: id })
+      await reloadTranslations()
+      if (activeId === id) {
+        await handleChange("1")
+      }
+    } catch (e) {
+      console.error("Failed to delete translation:", e)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   const englishTranslations = translations.filter((t) => t.language === "en")
   const otherTranslations = translations.filter((t) => t.language !== "en")
+  const customTranslations = translations.filter((t) => t.is_user_imported)
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Primary translation selector */}
       <div className="flex flex-col gap-2">
         <label className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
           Primary Translation
@@ -648,7 +767,14 @@ function BibleSection() {
                 </div>
                 {englishTranslations.map((t) => (
                   <SelectItem key={t.id} value={String(t.id)}>
-                    {t.abbreviation} — {t.title}
+                    <div className="flex items-center gap-2">
+                      <span>{t.abbreviation} — {t.title}</span>
+                      {t.is_user_imported && (
+                        <Badge variant="outline" className="h-4 px-1 text-[0.5625rem] font-semibold text-primary border-primary/30">
+                          Custom
+                        </Badge>
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
               </>
@@ -660,7 +786,14 @@ function BibleSection() {
                 </div>
                 {otherTranslations.map((t) => (
                   <SelectItem key={t.id} value={String(t.id)}>
-                    {t.abbreviation} — {t.title}
+                    <div className="flex items-center gap-2">
+                      <span>{t.abbreviation} — {t.title}</span>
+                      {t.is_user_imported && (
+                        <Badge variant="outline" className="h-4 px-1 text-[0.5625rem] font-semibold text-primary border-primary/30">
+                          Custom
+                        </Badge>
+                      )}
+                    </div>
                   </SelectItem>
                 ))}
               </>
@@ -668,11 +801,204 @@ function BibleSection() {
           </SelectContent>
         </Select>
         <p className="text-[0.625rem] text-muted-foreground">
-          Detected verses will display in this translation.
+          Detected verses and searches will display in this translation.
           {translations.length > 0 &&
             ` ${translations.length} translations available.`}
         </p>
       </div>
+
+      {/* Translations management */}
+      <div className="flex flex-col gap-3 rounded-lg border p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs font-medium text-foreground">
+              Translations & Add-ons
+            </span>
+            <p className="text-[0.625rem] text-muted-foreground">
+              Import custom translations (Message Bible, TPT, TLB, etc.) from JSON files.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1.5 text-xs"
+            onClick={() => {
+              setImportError(null)
+              setIsImportOpen(true)
+            }}
+          >
+            <PlusIcon className="size-3.5" />
+            Import Translation
+          </Button>
+        </div>
+
+        {customTranslations.length > 0 ? (
+          <div className="flex flex-col gap-1.5 pt-2">
+            <span className="text-[0.625rem] font-medium tracking-wider text-muted-foreground uppercase">
+              User Installed ({customTranslations.length})
+            </span>
+            <div className="divide-y rounded-md border text-xs">
+              {customTranslations.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between px-3 py-2"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Badge variant="secondary" className="font-mono text-[0.625rem]">
+                      {t.abbreviation}
+                    </Badge>
+                    <span className="font-medium text-foreground">{t.title}</span>
+                    <span className="text-[0.625rem] text-muted-foreground uppercase">
+                      ({t.language})
+                    </span>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="size-7 text-muted-foreground hover:text-destructive"
+                    disabled={deletingId === t.id}
+                    onClick={() => handleDelete(t.id, t.title, t.abbreviation)}
+                    title={`Delete ${t.title}`}
+                  >
+                    {deletingId === t.id ? (
+                      <Loader2Icon className="size-3.5 animate-spin" />
+                    ) : (
+                      <Trash2Icon className="size-3.5" />
+                    )}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-md border border-dashed p-3 text-center text-[0.625rem] text-muted-foreground">
+            No custom translations imported yet. Click &quot;Import Translation&quot; to add Message Bible (MSG), Passion Translation (TPT), Living Bible (TLB), or any custom Bible JSON.
+          </div>
+        )}
+      </div>
+
+      {/* Import Translation Dialog */}
+      <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">
+              Import Bible Translation
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Select any Bible JSON file (Scrollmapper format, flat verse list, or chapter map). It will be saved locally on this computer.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleImportSubmit} className="flex flex-col gap-4 py-2">
+            {importError && (
+              <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 p-2.5 text-xs text-destructive">
+                <AlertCircleIcon className="size-4 shrink-0" />
+                <span className="break-all">{importError}</span>
+              </div>
+            )}
+
+            {/* File selector */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".json"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-4 text-center transition-colors hover:border-primary/50 hover:bg-muted/30"
+            >
+              <UploadIcon className="size-5 text-muted-foreground" />
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-medium text-foreground">
+                  {importFile ? importFile.name : "Choose a .JSON Bible file"}
+                </span>
+                <span className="text-[0.625rem] text-muted-foreground">
+                  {importFile
+                    ? `${(importFile.size / (1024 * 1024)).toFixed(2)} MB • Click to change`
+                    : "Supports MSG, TPT, TLB, or standard Bible JSON"}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[0.625rem] font-medium tracking-wider text-muted-foreground uppercase">
+                  Abbreviation *
+                </label>
+                <Input
+                  placeholder="e.g. MSG"
+                  value={importAbbrev}
+                  onChange={(e) => setImportAbbrev(e.target.value.toUpperCase())}
+                  className="h-8 text-xs uppercase"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[0.625rem] font-medium tracking-wider text-muted-foreground uppercase">
+                  Language Code
+                </label>
+                <Input
+                  placeholder="en"
+                  value={importLang}
+                  onChange={(e) => setImportLang(e.target.value.toLowerCase())}
+                  className="h-8 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.625rem] font-medium tracking-wider text-muted-foreground uppercase">
+                Full Title *
+              </label>
+              <Input
+                placeholder="e.g. The Message"
+                value={importTitle}
+                onChange={(e) => setImportTitle(e.target.value)}
+                className="h-8 text-xs"
+                required
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.625rem] font-medium tracking-wider text-muted-foreground uppercase">
+                Publisher / License (Optional)
+              </label>
+              <Input
+                placeholder="e.g. NavPress / BroadStreet"
+                value={importLicense}
+                onChange={(e) => setImportLicense(e.target.value)}
+                className="h-8 text-xs"
+              />
+            </div>
+
+            <DialogFooter className="mt-2 flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => setIsImportOpen(false)}
+                disabled={importing}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                disabled={!importFile || importing}
+              >
+                {importing && <Loader2Icon className="size-3.5 animate-spin" />}
+                {importing ? "Importing..." : "Import Translation"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -159,3 +159,39 @@ pub fn get_translation_verses_for_search(
         })
         .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn import_bible_translation(
+    state: State<'_, Mutex<AppState>>,
+    abbreviation: String,
+    title: String,
+    language: String,
+    license: String,
+    json_content: String,
+) -> Result<Translation, String> {
+    let app_state = state.lock().map_err(|e| e.to_string())?;
+    let db = app_state
+        .bible_db
+        .as_ref()
+        .ok_or_else(|| "Bible database not loaded".to_string())?;
+    db.import_translation(&abbreviation, &title, &language, &license, &json_content)
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_user_translation(
+    state: State<'_, Mutex<AppState>>,
+    translation_id: i64,
+) -> Result<bool, String> {
+    let mut app_state = state.lock().map_err(|e| e.to_string())?;
+    if app_state.active_translation_id == translation_id {
+        app_state.active_translation_id = 1;
+    }
+    let db = app_state
+        .bible_db
+        .as_ref()
+        .ok_or_else(|| "Bible database not loaded".to_string())?;
+    db.delete_user_translation(translation_id)
+        .map_err(|e| e.to_string())
+}
+

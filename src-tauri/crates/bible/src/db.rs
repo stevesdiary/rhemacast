@@ -5,14 +5,73 @@ use rusqlite::{Connection, OpenFlags};
 
 use crate::error::BibleError;
 
+pub const USER_TRANSLATION_OFFSET: i64 = 100_000;
+
 pub struct BibleDb {
     pub(crate) conn: Mutex<Connection>,
+    pub(crate) user_conn: Option<Mutex<Connection>>,
 }
 
 impl std::fmt::Debug for BibleDb {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("BibleDb").finish_non_exhaustive()
     }
+}
+
+/// Initialize the schema for custom user-imported translations.
+fn init_user_db_schema(conn: &Connection) -> Result<(), BibleError> {
+    conn.execute_batch(
+        "PRAGMA journal_mode=WAL;
+         CREATE TABLE IF NOT EXISTS translations (
+             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             abbreviation TEXT NOT NULL UNIQUE,
+             title TEXT NOT NULL,
+             language TEXT NOT NULL,
+             license TEXT NOT NULL,
+             is_copyrighted INTEGER NOT NULL DEFAULT 0,
+             is_downloaded INTEGER NOT NULL DEFAULT 1,
+             is_user_imported INTEGER NOT NULL DEFAULT 1
+         );
+         CREATE TABLE IF NOT EXISTS books (
+             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             translation_id INTEGER NOT NULL REFERENCES translations(id),
+             book_number INTEGER NOT NULL,
+             name TEXT NOT NULL,
+             abbreviation TEXT NOT NULL,
+             testament TEXT NOT NULL,
+             UNIQUE(translation_id, book_number)
+         );
+         CREATE TABLE IF NOT EXISTS verses (
+             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             translation_id INTEGER NOT NULL REFERENCES translations(id),
+             book_id INTEGER NOT NULL REFERENCES books(id),
+             book_number INTEGER NOT NULL,
+             book_name TEXT NOT NULL,
+             book_abbreviation TEXT NOT NULL,
+             chapter INTEGER NOT NULL,
+             verse INTEGER NOT NULL,
+             text TEXT NOT NULL
+         );
+         CREATE INDEX IF NOT EXISTS idx_user_verses_lookup ON verses(translation_id, book_number, chapter, verse);
+         CREATE INDEX IF NOT EXISTS idx_user_verses_chapter ON verses(translation_id, book_number, chapter);
+         CREATE VIRTUAL TABLE IF NOT EXISTS verses_fts USING fts5(
+             text,
+             content='verses',
+             content_rowid='id',
+             tokenize='unicode61'
+         );
+         CREATE TRIGGER IF NOT EXISTS user_verses_ai AFTER INSERT ON verses BEGIN
+             INSERT INTO verses_fts(rowid, text) VALUES (new.id, new.text);
+         END;
+         CREATE TRIGGER IF NOT EXISTS user_verses_ad AFTER DELETE ON verses BEGIN
+             INSERT INTO verses_fts(verses_fts, rowid, text) VALUES ('delete', old.id, old.text);
+         END;
+         CREATE TRIGGER IF NOT EXISTS user_verses_au AFTER UPDATE ON verses BEGIN
+             INSERT INTO verses_fts(verses_fts, rowid, text) VALUES ('delete', old.id, old.text);
+             INSERT INTO verses_fts(rowid, text) VALUES (new.id, new.text);
+         END;",
+    )?;
+    Ok(())
 }
 
 /// Build a `SQLite` URI that opens `path` as immutable.
@@ -55,23 +114,38 @@ fn immutable_uri(path: &Path) -> String {
 
 impl BibleDb {
     /// Open the Bible database for reading.
-    ///
-    /// Read-only and immutable on purpose. In production this file is
-    /// `Rhema.app/Contents/Resources/rhema.db`, and the previous read-write
-    /// open with `journal_mode=WAL` wrote `rhema.db-wal` and `rhema.db-shm`
-    /// next to it on first launch — inside the signed bundle, which invalidates
-    /// the macOS code signature and makes Gatekeeper report the app as damaged.
-    /// Nothing at runtime writes to this database; it is built ahead of time by
-    /// `bun run build:bible`.
     pub fn open(path: &Path) -> Result<Self, BibleError> {
+        Self::open_with_user_db(path, None)
+    }
+
+    /// Open the Bible database with an optional user translations database in app data dir.
+    pub fn open_with_user_db(path: &Path, user_db_path: Option<&Path>) -> Result<Self, BibleError> {
         let conn = Connection::open_with_flags(
             immutable_uri(path),
             OpenFlags::SQLITE_OPEN_READ_ONLY
                 | OpenFlags::SQLITE_OPEN_URI
                 | OpenFlags::SQLITE_OPEN_NO_MUTEX,
         )?;
+
+        let user_conn = if let Some(u_path) = user_db_path {
+            if let Some(parent) = u_path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            let uconn = Connection::open_with_flags(
+                u_path,
+                OpenFlags::SQLITE_OPEN_READ_WRITE
+                    | OpenFlags::SQLITE_OPEN_CREATE
+                    | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+            )?;
+            init_user_db_schema(&uconn)?;
+            Some(Mutex::new(uconn))
+        } else {
+            None
+        };
+
         Ok(Self {
             conn: Mutex::new(conn),
+            user_conn,
         })
     }
 
@@ -80,6 +154,7 @@ impl BibleDb {
     pub fn open_writable(path: &Path) -> Result<Self, BibleError> {
         Ok(Self {
             conn: Mutex::new(Connection::open(path)?),
+            user_conn: None,
         })
     }
 }

@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 
 use rusqlite::Connection;
 
-use crate::db::BibleDb;
+use crate::db::{BibleDb, USER_TRANSLATION_OFFSET};
 use crate::error::BibleError;
 use crate::models::{Book, Verse};
 
@@ -212,6 +212,42 @@ impl BibleDb {
         translation_id: i64,
         limit: usize,
     ) -> Result<Vec<Verse>, BibleError> {
+        if translation_id >= USER_TRANSLATION_OFFSET {
+            let user_conn = self.user_conn.as_ref().ok_or_else(|| {
+                BibleError::Internal("User translations database not configured".into())
+            })?;
+            let conn = user_conn.lock().map_err(|e| BibleError::Internal(e.to_string()))?;
+            let internal_id = translation_id - USER_TRANSLATION_OFFSET;
+            let mut stmt = conn.prepare(
+                "SELECT v.id, v.translation_id, v.book_number, v.book_name, v.book_abbreviation, v.chapter, v.verse, v.text \
+                 FROM verses_fts fts \
+                 JOIN verses v ON v.rowid = fts.rowid \
+                 WHERE fts.text MATCH ?1 AND v.translation_id = ?2 \
+                 LIMIT ?3",
+            )?;
+            #[expect(
+                clippy::cast_possible_wrap,
+                reason = "limit is a small page-size value that fits in i64"
+            )]
+            let limit_i64 = limit as i64;
+            let rows = stmt.query_map(
+                rusqlite::params![query, internal_id, limit_i64],
+                |row: &rusqlite::Row| {
+                    Ok(Verse {
+                        id: row.get::<_, i64>(0)? + USER_TRANSLATION_OFFSET * 1000,
+                        translation_id,
+                        book_number: row.get(2)?,
+                        book_name: row.get(3)?,
+                        book_abbreviation: row.get(4)?,
+                        chapter: row.get(5)?,
+                        verse: row.get(6)?,
+                        text: row.get(7)?,
+                    })
+                },
+            )?;
+            return Ok(rows.collect::<Result<Vec<_>, _>>()?);
+        }
+
         let conn = self.conn.lock().map_err(|e| BibleError::Internal(e.to_string()))?;
         let mut stmt = conn.prepare(
             "SELECT v.id, v.translation_id, v.book_number, v.book_name, v.book_abbreviation, v.chapter, v.verse, v.text \
@@ -423,7 +459,36 @@ impl BibleDb {
                 testament: row.get(5)?,
             })
         })?;
-        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+        let mut books = rows.collect::<Result<Vec<_>, _>>()?;
+
+        if let Some(user_conn) = &self.user_conn {
+            if let Ok(uconn) = user_conn.lock() {
+                if let Ok(mut ustmt) = uconn.prepare(
+                    "SELECT id, translation_id, book_number, name, abbreviation, testament \
+                     FROM books \
+                     WHERE name LIKE ?1 OR abbreviation LIKE ?1 \
+                     ORDER BY book_number",
+                ) {
+                    if let Ok(urows) = ustmt.query_map(rusqlite::params![pattern], |row: &rusqlite::Row| {
+                        let t_id: i64 = row.get(1)?;
+                        Ok(Book {
+                            id: row.get::<_, i64>(0)? + USER_TRANSLATION_OFFSET * 1000,
+                            translation_id: t_id + USER_TRANSLATION_OFFSET,
+                            book_number: row.get(2)?,
+                            name: row.get(3)?,
+                            abbreviation: row.get(4)?,
+                            testament: row.get(5)?,
+                        })
+                    }) {
+                        for b in urows.flatten() {
+                            books.push(b);
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(books)
     }
 }
 

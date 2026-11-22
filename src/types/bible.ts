@@ -5,6 +5,7 @@ export interface Translation {
   language: string
   is_copyrighted: boolean
   is_downloaded: boolean
+  is_user_imported?: boolean
 }
 
 export interface Book {

@@ -106,6 +106,8 @@ pub fn run() {
             commands::bible::get_cross_references,
             commands::bible::get_active_translation,
             commands::bible::set_active_translation,
+            commands::bible::import_bible_translation,
+            commands::bible::delete_user_translation,
             commands::diagnostics::export_diagnostics,
             commands::detection::detect_verses,
             commands::detection::detection_status,
@@ -168,7 +170,13 @@ pub fn run() {
                 });
 
             if db_path.exists() {
-                let bible_db = rhema_bible::BibleDb::open(&db_path)
+                let user_db_path = app
+                    .path()
+                    .app_data_dir()
+                    .ok()
+                    .map(|p| p.join("user_bibles.db"));
+
+                let bible_db = rhema_bible::BibleDb::open_with_user_db(&db_path, user_db_path.as_deref())
                     .expect("Failed to open Bible database");
 
                 let songs_db = rhema_songs::SongsDb::open(&db_path)

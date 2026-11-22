@@ -8,6 +8,8 @@ pub struct Translation {
     pub language: String,
     pub is_copyrighted: bool,
     pub is_downloaded: bool,
+    #[serde(default)]
+    pub is_user_imported: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
