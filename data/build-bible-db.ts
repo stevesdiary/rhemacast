@@ -428,32 +428,32 @@ const TRANSLATIONS_META: Array<{
   },
   // Yoruba
 
-  // Spanish
-  {
-    file: "SpaRV.json",
-    abbreviation: "SpaRV",
-    title: "Reina-Valera 1909",
-    language: "es",
-    license: "Public Domain",
-  },
+  // Spanish (intentionally excluded)
+  // {
+  //   file: "SpaRV.json",
+  //   abbreviation: "SpaRV",
+  //   title: "Reina-Valera 1909",
+  //   language: "es",
+  //   license: "Public Domain",
+  // },
 
-  // French
-  {
-    file: "FreJND.json",
-    abbreviation: "FreJND",
-    title: "J.N. Darby French 1885",
-    language: "fr",
-    license: "Public Domain",
-  },
+  // French (intentionally excluded)
+  // {
+  //   file: "FreJND.json",
+  //   abbreviation: "FreJND",
+  //   title: "J.N. Darby French 1885",
+  //   language: "fr",
+  //   license: "Public Domain",
+  // },
 
-  // Portuguese
-  {
-    file: "PorBLivre.json",
-    abbreviation: "PorBLivre",
-    title: "Bíblia Livre",
-    language: "pt",
-    license: "Public Domain",
-  },
+  // Portuguese (intentionally excluded)
+  // {
+  //   file: "PorBLivre.json",
+  //   abbreviation: "PorBLivre",
+  //   title: "Bíblia Livre",
+  //   language: "pt",
+  //   license: "Public Domain",
+  // },
 
   // Yoruba
   {
@@ -524,8 +524,10 @@ function main() {
     // Insert books and verses
     for (let bookIdx = 0; bookIdx < data.books.length; bookIdx++) {
       const book = data.books[bookIdx]
-      const bookNumber = bookIdx + 1
-      const abbrev = BOOK_ABBREVS[book.name] || book.name.substring(0, 4)
+      const canonAbbrev = BOOK_ABBREVS[book.name]
+      const canonNum = canonAbbrev ? OSIS_TO_NUM[canonAbbrev] : undefined
+      const bookNumber = canonNum ?? (bookIdx + 1)
+      const abbrev = canonAbbrev || book.name.substring(0, 4)
       const testament = bookNumber <= 39 ? "OT" : "NT"
 
       insertBook.run(tId, bookNumber, book.name, abbrev, testament)
