@@ -449,31 +449,31 @@ const TRANSLATIONS_META: Array<{
   // },
 
   // Spanish
-  {
-    file: "SpaRV.json",
-    abbreviation: "SpaRV",
-    title: "Reina-Valera 1909",
-    language: "es",
-    license: "Public Domain",
-  },
+  // {
+  //   file: "SpaRV.json",
+  //   abbreviation: "SpaRV",
+  //   title: "Reina-Valera 1909",
+  //   language: "es",
+  //   license: "Public Domain",
+  // },
 
-  // French
-  {
-    file: "FreJND.json",
-    abbreviation: "FreJND",
-    title: "J.N. Darby French 1885",
-    language: "fr",
-    license: "Public Domain",
-  },
+  // // French
+  // {
+  //   file: "FreJND.json",
+  //   abbreviation: "FreJND",
+  //   title: "J.N. Darby French 1885",
+  //   language: "fr",
+  //   license: "Public Domain",
+  // },
 
   // Portuguese
-  {
-    file: "PorBLivre.json",
-    abbreviation: "PorBLivre",
-    title: "Bíblia Livre",
-    language: "pt",
-    license: "Public Domain",
-  },
+  // {
+  //   file: "PorBLivre.json",
+  //   abbreviation: "PorBLivre",
+  //   title: "Bíblia Livre",
+  //   language: "pt",
+  //   license: "Public Domain",
+  // },
 
   // // Afrikaans
   // {
