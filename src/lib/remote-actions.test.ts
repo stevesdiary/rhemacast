@@ -275,23 +275,15 @@ function songQueueItemFor(song: SongWithSections): SongQueueItem {
 }
 
 describe("remoteActions song queue navigation", () => {
-  it("steps line-by-line through active song slides, then advances to next item", async () => {
-    useBroadcastStore.setState({ isLive: true })
+  it("advances directly through schedule items (songs and verses)", async () => {
+    useBroadcastStore.setState({ isLive: true, autoLive: true })
     useSongsStore.setState({ activeSlideIndex: 0, displayMode: "line" })
     useQueueStore.setState({
       items: [songQueueItemFor(testSong), queueItemFor(johnThreeSixteen)],
       activeIndex: 0,
     })
 
-    // Advance within song to line 2
-    remoteActions.queueNext()
-    expect(useSongsStore.getState().activeSlideIndex).toBe(1)
-    expect(useQueueStore.getState().activeIndex).toBe(0)
-    expect(useBroadcastStore.getState().liveVerse?.segments[0].text).toBe(
-      "Line 2"
-    )
-
-    // Advance past end of song to next schedule item (verse)
+    // Advance directly to next schedule item (verse)
     remoteActions.queueNext()
     expect(useQueueStore.getState().activeIndex).toBe(1)
   })

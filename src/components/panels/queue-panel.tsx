@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { PanelHeader } from "@/components/ui/panel-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import {
@@ -12,24 +10,16 @@ import {
   GripVerticalIcon,
   MusicIcon,
   BookOpenIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  SkipBackIcon,
-  SkipForwardIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   DownloadIcon,
   UploadIcon,
   PencilIcon,
-  CheckIcon,
+  LanguagesIcon,
 } from "lucide-react"
 import { useQueueStore } from "@/stores"
 import { useSettingsStore } from "@/stores/settings-store"
 import { useSongsStore } from "@/stores/songs-store"
-import { updateSectionLyrics } from "@/hooks/use-songs"
-import { presentVerse, presentSongSlide } from "@/hooks/use-broadcast"
-import { bibleActions } from "@/hooks/use-bible"
-import { generateSongSlides, type SongSlide } from "@/lib/song-slides"
 import { remoteActions } from "@/lib/remote-actions"
 import {
   exportScheduleToFile,
@@ -40,493 +30,12 @@ import { ImportSongsPromptDialog } from "@/components/schedule/import-songs-prom
 import { EditSongDialog } from "@/components/songs/edit-song-dialog"
 import type {
   QueueItem,
-  SongQueueItem,
-  VerseQueueItem,
   SongWithSections,
 } from "@/types"
-import { isVerseQueueItem, isSongQueueItem } from "@/types"
+import { isVerseQueueItem, isSongQueueItem, isConcordanceQueueItem } from "@/types"
 
-function selectScheduleItem(index: number) {
-  const { items } = useQueueStore.getState()
-  if (index < 0 || index >= items.length) return
-  useQueueStore.getState().setActive(index)
-  const item = items[index]
-
-  if (isVerseQueueItem(item)) {
-    bibleActions.navigateToVerse(
-      item.verse.book_number,
-      item.verse.chapter,
-      item.verse.verse
-    )
-    void presentVerse(item.verse)
-  } else if (isSongQueueItem(item)) {
-    const songStore = useSongsStore.getState()
-    const mode = useSettingsStore.getState().songDisplayMode ?? "line"
-    songStore.selectSong(item.song)
-    if (item.section) songStore.selectSection(item.section)
-    songStore.setActiveSlideIndex(0)
-
-    const slides = generateSongSlides(item.song, mode, item.section)
-    if (slides.length > 0) {
-      const slide = slides[0]
-      const lineInfo =
-        mode === "line" && slide.lineIndex && slide.totalLines
-          ? { current: slide.lineIndex, total: slide.totalLines }
-          : undefined
-      presentSongSlide(
-        slide.songTitle,
-        slide.sectionLabel,
-        slide.text,
-        lineInfo
-      )
-    }
-  }
-}
-
-function ActiveSongStepper({
-  item,
-  mode,
-  onEditSong,
-}: {
-  item: SongQueueItem
-  mode: "line" | "stanza"
-  onEditSong?: (song: SongWithSections) => void
-}) {
-  const activeSlideIndex = useSongsStore((s) => s.activeSlideIndex)
-  const slides = useMemo(
-    () => generateSongSlides(item.song, mode, item.section),
-    [item.song, mode, item.section]
-  )
-  const slideListRef = useRef<HTMLDivElement>(null)
-  const [editingSlideId, setEditingSlideId] = useState<string | null>(null)
-  const [editingText, setEditingText] = useState("")
-  const [isSavingInline, setIsSavingInline] = useState(false)
-  const [autosaveStatus, setAutosaveStatus] = useState<"idle" | "saving" | "saved">("idle")
-  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (autosaveTimerRef.current) {
-        clearTimeout(autosaveTimerRef.current)
-      }
-    }
-  }, [])
-
-  // Scroll the active slide into view smoothly
-  useEffect(() => {
-    if (!slideListRef.current) return
-    const activeEl = slideListRef.current.querySelector(
-      `[data-slide-idx="${activeSlideIndex}"]`
-    )
-    if (activeEl) {
-      activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" })
-    }
-  }, [activeSlideIndex])
-
-  const handleSelectSlide = (idx: number) => {
-    useSongsStore.getState().setActiveSlideIndex(idx)
-    const slide = slides[idx]
-    if (!slide) return
-    const lineInfo =
-      mode === "line" && slide.lineIndex && slide.totalLines
-        ? { current: slide.lineIndex, total: slide.totalLines }
-        : undefined
-    presentSongSlide(slide.songTitle, slide.sectionLabel, slide.text, lineInfo)
-  }
-
-  const handlePrevSlide = () => {
-    if (activeSlideIndex > 0) {
-      handleSelectSlide(activeSlideIndex - 1)
-    } else {
-      remoteActions.queuePrev()
-    }
-  }
-
-  const handleNextSlide = () => {
-    if (activeSlideIndex < slides.length - 1) {
-      handleSelectSlide(activeSlideIndex + 1)
-    } else {
-      remoteActions.queueNext()
-    }
-  }
-
-  const handleStartEdit = (slide: SongSlide, e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    setEditingSlideId(slide.id)
-    setEditingText(slide.text)
-    setAutosaveStatus("idle")
-  }
-
-  const handleCancelEdit = (e?: React.MouseEvent) => {
-    e?.stopPropagation()
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current)
-    }
-    setEditingSlideId(null)
-    setEditingText("")
-    setAutosaveStatus("idle")
-  }
-
-  const handleSaveInline = async (
-    slide: SongSlide,
-    closeAfter = true,
-    e?: React.MouseEvent
-  ) => {
-    e?.stopPropagation()
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current)
-    }
-
-    const trimmed = editingText.trim()
-    if (!trimmed) {
-      if (closeAfter) {
-        toast.error("Lyrics text cannot be empty")
-      }
-      return
-    }
-
-    const targetSection = item.song.sections.find(
-      (s) => s.id === slide.sectionId
-    )
-    if (!targetSection) return
-
-    let updatedLyrics = ""
-    if (mode === "stanza") {
-      updatedLyrics = trimmed
-    } else {
-      const lines = targetSection.lyrics
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter((l) => l.length > 0)
-      const targetIdx = (slide.lineIndex ?? 1) - 1
-      if (targetIdx >= 0 && targetIdx < lines.length) {
-        lines[targetIdx] = trimmed
-      } else {
-        lines.push(trimmed)
-      }
-      updatedLyrics = lines.join("\n")
-    }
-
-    setIsSavingInline(true)
-    setAutosaveStatus("saving")
-    try {
-      await updateSectionLyrics(slide.sectionId, updatedLyrics)
-      useQueueStore
-        .getState()
-        .updateSongSectionLyrics(
-          item.song.song.id,
-          slide.sectionId,
-          updatedLyrics
-        )
-
-      // If this slide is currently live, hot-patch the projection screen immediately!
-      if (slides[activeSlideIndex]?.id === slide.id) {
-        const lineInfo =
-          mode === "line" && slide.lineIndex && slide.totalLines
-            ? { current: slide.lineIndex, total: slide.totalLines }
-            : undefined
-        presentSongSlide(slide.songTitle, slide.sectionLabel, trimmed, lineInfo)
-      }
-
-      setAutosaveStatus("saved")
-      if (closeAfter) {
-        toast.success("Lyrics updated & autosaved to songlist")
-        setEditingSlideId(null)
-      }
-    } catch (err) {
-      console.error(err)
-      toast.error("Failed to update lyrics", { description: String(err) })
-      setAutosaveStatus("idle")
-    } finally {
-      setIsSavingInline(false)
-    }
-  }
-
-  const handleTextChange = (slide: SongSlide, text: string) => {
-    setEditingText(text)
-    setAutosaveStatus("idle")
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current)
-    }
-    autosaveTimerRef.current = setTimeout(() => {
-      void handleSaveInline(slide, false)
-    }, 600)
-  }
-
-  const handleBlur = (slide: SongSlide) => {
-    if (autosaveTimerRef.current) {
-      clearTimeout(autosaveTimerRef.current)
-    }
-    void handleSaveInline(slide, true)
-  }
-
-  const currentSlide = slides[activeSlideIndex] ?? slides[0]
-
-  return (
-    <div className="flex flex-col gap-2 rounded-md border border-primary/25 bg-primary/5 p-2.5">
-      {/* Song Header & Controls */}
-      <div className="flex items-center justify-between gap-1">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center gap-1.5">
-            <MusicIcon className="size-3.5 shrink-0 text-primary" />
-            <span className="truncate text-xs font-semibold text-foreground">
-              {item.song.song.title}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              className="h-5 w-5 text-muted-foreground hover:text-foreground"
-              onClick={() => onEditSong?.(item.song)}
-              title="Edit full song in Song Editor"
-            >
-              <PencilIcon className="size-3 text-lime-400" />
-            </Button>
-          </div>
-          <span className="truncate text-[0.65rem] text-muted-foreground">
-            {currentSlide
-              ? `${currentSlide.sectionLabel} • ${mode === "line" ? `Line ${currentSlide.lineIndex ?? 1} of ${currentSlide.totalLines ?? 1}` : "Stanza"}`
-              : "Lyrics"}
-          </span>
-        </div>
-
-        {/* Stepper Buttons */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => remoteActions.queuePrev()}
-            title="Previous item in schedule"
-          >
-            <SkipBackIcon className="size-3" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-xs"
-            onClick={handlePrevSlide}
-            title={mode === "line" ? "Previous line" : "Previous stanza"}
-          >
-            <ChevronLeftIcon className="size-3.5" />
-          </Button>
-          <Button
-            variant="default"
-            size="xs"
-            className="px-2 font-medium"
-            onClick={handleNextSlide}
-            title={mode === "line" ? "Next line" : "Next stanza"}
-          >
-            Next
-            <ChevronRightIcon className="size-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => remoteActions.queueNext()}
-            title="Next item in schedule"
-          >
-            <SkipForwardIcon className="size-3" />
-          </Button>
-        </div>
-      </div>
-
-      {/* Interactive Slides List */}
-      <div
-        ref={slideListRef}
-        className="flex min-h-[5rem] max-h-60 flex-1 flex-col gap-1 overflow-y-auto rounded border border-border/50 bg-background/60 p-1"
-      >
-        {slides.map((slide, idx) => {
-          const isLiveSlide = idx === activeSlideIndex
-          const isEditing = editingSlideId === slide.id
-
-          return (
-            <div
-              key={slide.id}
-              data-slide-idx={idx}
-              onClick={() => {
-                if (!isEditing) handleSelectSlide(idx)
-              }}
-              className={cn(
-                "group flex cursor-pointer items-start gap-2 rounded px-2 py-1.5 text-xs transition-colors",
-                isLiveSlide
-                  ? "border border-emerald-500/40 bg-emerald-500/15 font-medium text-foreground"
-                  : "text-muted-foreground hover:bg-muted/60"
-              )}
-            >
-              <span className="mt-0.5 shrink-0 font-mono text-[0.6rem] tabular-nums opacity-60">
-                {idx + 1}
-              </span>
-              <div className="flex min-w-0 flex-1 flex-col">
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-[0.6rem] font-medium tracking-wider text-primary/80 uppercase">
-                    {slide.sectionLabel}
-                  </span>
-                  {!isEditing && (
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      className="h-4 w-4 p-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground"
-                      onClick={(e) => handleStartEdit(slide, e)}
-                      title="Quick edit this line"
-                    >
-                      <PencilIcon className="size-2.5" />
-                    </Button>
-                  )}
-                </div>
-
-                {isEditing ? (
-                  <div
-                    className="mt-1 flex flex-col gap-1.5"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {mode === "line" ? (
-                      <Input
-                        value={editingText}
-                        onChange={(e) => handleTextChange(slide, e.target.value)}
-                        onBlur={() => handleBlur(slide)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault()
-                            void handleSaveInline(slide, true)
-                          } else if (e.key === "Escape") {
-                            handleCancelEdit()
-                          }
-                        }}
-                        autoFocus
-                        disabled={isSavingInline}
-                        className="h-6 bg-background px-1.5 text-xs"
-                      />
-                    ) : (
-                      <Textarea
-                        value={editingText}
-                        onChange={(e) => handleTextChange(slide, e.target.value)}
-                        onBlur={() => handleBlur(slide)}
-                        onKeyDown={(e) => {
-                          if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                            e.preventDefault()
-                            void handleSaveInline(slide, true)
-                          } else if (e.key === "Escape") {
-                            handleCancelEdit()
-                          }
-                        }}
-                        autoFocus
-                        rows={3}
-                        disabled={isSavingInline}
-                        className="bg-background p-1.5 text-xs"
-                      />
-                    )}
-                    <div className="flex items-center justify-between gap-1 text-[0.6rem] text-muted-foreground">
-                      <span className="italic">
-                        {autosaveStatus === "saving" && "Autosaving..."}
-                        {autosaveStatus === "saved" && "Autosaved ✓"}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          className="h-5 w-5"
-                          onClick={handleCancelEdit}
-                          title="Cancel (Esc)"
-                        >
-                          <XIcon className="size-3 text-muted-foreground" />
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="xs"
-                          disabled={isSavingInline}
-                          className="h-5 gap-1 bg-emerald-600 px-1.5 text-[0.65rem] hover:bg-emerald-500"
-                          onClick={(e) => void handleSaveInline(slide, true, e)}
-                          title={
-                            mode === "line"
-                              ? "Save & apply (Enter)"
-                              : "Save & apply (Ctrl+Enter)"
-                          }
-                        >
-                          <CheckIcon className="size-2.5" />
-                          Save
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <p
-                    onDoubleClick={(e) => handleStartEdit(slide, e)}
-                    className={cn(
-                      "leading-relaxed select-text",
-                      mode === "stanza" ? "line-clamp-3" : "line-clamp-2"
-                    )}
-                    title="Double-click to quick edit"
-                  >
-                    {slide.text}
-                  </p>
-                )}
-              </div>
-              {isLiveSlide && !isEditing && (
-                <Badge
-                  variant="default"
-                  className="h-4 shrink-0 bg-emerald-600 px-1 py-0 text-[0.55rem] font-bold uppercase"
-                >
-                  Live
-                </Badge>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function ActiveVerseStepper({ item }: { item: VerseQueueItem }) {
-  return (
-    <div className="flex flex-col gap-2 rounded-md border border-primary/25 bg-primary/5 p-2.5">
-      <div className="flex items-center justify-between gap-1">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <BookOpenIcon className="size-3.5 shrink-0 text-primary" />
-          <span className="truncate text-xs font-semibold text-foreground">
-            {item.reference}
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => remoteActions.queuePrev()}
-            title="Previous item in schedule"
-          >
-            <SkipBackIcon className="size-3" />
-          </Button>
-          <Button
-            variant="outline"
-            size="xs"
-            onClick={() => bibleActions.stepVerse("prev")}
-            title="Previous verse"
-          >
-            <ChevronLeftIcon className="size-3" />
-            Prev
-          </Button>
-          <Button
-            variant="default"
-            size="xs"
-            onClick={() => bibleActions.stepVerse("next")}
-            title="Next verse"
-          >
-            Next
-            <ChevronRightIcon className="size-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => remoteActions.queueNext()}
-            title="Next item in schedule"
-          >
-            <SkipForwardIcon className="size-3" />
-          </Button>
-        </div>
-      </div>
-      <p className="line-clamp-3 rounded border border-border/50 bg-background/60 p-2 text-xs leading-relaxed text-muted-foreground">
-        {item.verse.text || "(Verse text loading...)"}
-      </p>
-    </div>
-  )
+function selectScheduleItem(index: number, options?: { forceLive?: boolean }) {
+  void remoteActions.selectQueueItem(index, options)
 }
 
 function ScheduleItemRow({
@@ -556,13 +65,18 @@ function ScheduleItemRow({
   }
 
   const isSong = isSongQueueItem(item)
+  const isConcordance = isConcordanceQueueItem(item)
   const title = isVerseQueueItem(item)
     ? item.reference
-    : `${item.song.song.title}${item.section ? ` (${item.section.section_type} ${item.section.section_number})` : ""}`
+    : isSongQueueItem(item)
+      ? `${item.song.song.title}${item.section ? ` (${item.section.section_type} ${item.section.section_number})` : ""}`
+      : `${item.entry.lemma} • ${item.entry.translit} (${item.entry.strongs_number})`
 
   const subtitle = isVerseQueueItem(item)
     ? item.verse.text?.slice(0, 45) + "..."
-    : item.song.song.author || `${item.song.sections.length} sections`
+    : isSongQueueItem(item)
+      ? item.song.song.author || `${item.song.sections.length} sections`
+      : item.entry.strongs_def.slice(0, 45) + "..."
 
   return (
     <div
@@ -581,6 +95,8 @@ function ScheduleItemRow({
 
       {isSong ? (
         <MusicIcon className="size-3.5 shrink-0 text-emerald-500/80" />
+      ) : isConcordance ? (
+        <LanguagesIcon className="size-3.5 shrink-0 text-amber-500/80" />
       ) : (
         <BookOpenIcon className="size-3.5 shrink-0 text-blue-500/80" />
       )}
@@ -638,7 +154,7 @@ function ScheduleItemRow({
           size="icon-xs"
           onClick={(e) => {
             e.stopPropagation()
-            selectScheduleItem(index)
+            selectScheduleItem(index, { forceLive: true })
           }}
           title="Present this item"
         >
@@ -671,10 +187,16 @@ export function QueuePanel() {
   const [importing, setImporting] = useState(false)
   const [editingSong, setEditingSong] = useState<SongWithSections | null>(null)
 
-  const activeItem =
-    activeIndex !== null && activeIndex >= 0 && activeIndex < items.length
-      ? items[activeIndex]
-      : null
+  // Scroll active schedule item into view
+  useEffect(() => {
+    if (activeIndex === null) return
+    const el = document.querySelector(
+      `[data-slot="queue-panel"] [data-queue-idx="${activeIndex}"]`
+    )
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    }
+  }, [activeIndex])
 
   const handleExportSchedule = async () => {
     if (items.length === 0) {
@@ -751,18 +273,44 @@ export function QueuePanel() {
 
       if (isInput) return
 
-      if (
-        e.key === "ArrowDown" ||
+      // Don't intercept if a modal or dialog is open
+      const isModalOpen = Boolean(
+        document.querySelector(
+          '[role="dialog"], [role="alertdialog"], [data-state="open"][data-slot*="dialog"]'
+        )
+      )
+      if (isModalOpen) return
+
+      const isInsideQueue = Boolean(
+        activeElement?.closest('[data-slot="queue-panel"]')
+      )
+
+      if (e.key === "ArrowDown") {
+        if (!isInsideQueue) return
+        e.preventDefault()
+        remoteActions.queueNext()
+      } else if (e.key === "ArrowUp") {
+        if (!isInsideQueue) return
+        e.preventDefault()
+        remoteActions.queuePrev()
+      } else if (e.key === "Enter") {
+        if (!isInsideQueue) return
+        e.preventDefault()
+        if (activeIndex !== null) {
+          selectScheduleItem(activeIndex, { forceLive: true })
+        }
+      } else if (
         e.key === "PageDown" ||
         (e.key === " " && !e.shiftKey)
       ) {
+        // Presentation clicker remotes send PageDown / Space globally
         e.preventDefault()
         remoteActions.queueNext()
       } else if (
-        e.key === "ArrowUp" ||
         e.key === "PageUp" ||
         (e.key === " " && e.shiftKey)
       ) {
+        // Presentation clicker remotes send PageUp / Shift+Space globally
         e.preventDefault()
         remoteActions.queuePrev()
       }
@@ -770,7 +318,7 @@ export function QueuePanel() {
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [])
+  }, [activeIndex])
 
   const handleMoveUp = (idx: number) => {
     if (idx > 0) {
@@ -791,7 +339,8 @@ export function QueuePanel() {
   return (
     <div
       data-slot="queue-panel"
-      className="flex h-full w-full min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card"
+      tabIndex={0}
+      className="flex h-full w-full min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card outline-none"
     >
       <PanelHeader title="Schedule">
         <div className="flex items-center gap-1.5">
@@ -861,18 +410,6 @@ export function QueuePanel() {
       </PanelHeader>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-2">
-        {/* Active Stepper Card (when a song or scripture is active) */}
-        {activeItem && isSongQueueItem(activeItem) && (
-          <ActiveSongStepper
-            item={activeItem}
-            mode={songDisplayMode}
-            onEditSong={setEditingSong}
-          />
-        )}
-        {activeItem && isVerseQueueItem(activeItem) && (
-          <ActiveVerseStepper item={activeItem} />
-        )}
-
         {/* Schedule Items List */}
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="flex flex-col gap-1">

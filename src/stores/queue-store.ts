@@ -77,7 +77,7 @@ export const useQueueStore = create<QueueState>((set, get) => ({
           return state
         }
       }
-      return { items: [item, ...state.items] }
+      return { items: [...state.items, item] }
     }),
   removeItem: (id) =>
     set((state) => ({

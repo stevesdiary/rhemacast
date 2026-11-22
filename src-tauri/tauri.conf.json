@@ -1,7 +1,7 @@
 {
   "$schema": "../../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Rhema Pro",
-  "version": "0.3.2",
+  "version": "0.3.4",
   "identifier": "com.openbezal.rhema-pro",
   "build": {
     "frontendDist": "../build",
@@ -12,13 +12,13 @@
   "app": {
     "windows": [
       {
-        "title": "Rhema",
+        "title": "Rhema Pro",
         "width": 1280,
         "height": 800,
         "minWidth": 1024,
         "minHeight": 600,
         "resizable": true,
-        "fullscreen": false,
+        "fullscreen": true,
         "center": true
       }
     ],

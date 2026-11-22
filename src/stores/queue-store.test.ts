@@ -42,12 +42,12 @@ beforeEach(() => {
 })
 
 describe("addItem", () => {
-  it("prepends a new item", () => {
+  it("appends a new item (oldest first, last added below)", () => {
     useQueueStore.getState().addItem(makeItem({ id: "a" }))
     useQueueStore.getState().addItem(makeItem({ id: "b" }, { verse: 17 }))
 
     const items = useQueueStore.getState().items
-    expect(items.map((i) => i.id)).toEqual(["b", "a"])
+    expect(items.map((i) => i.id)).toEqual(["a", "b"])
   })
 
   it("drops an exact duplicate that adds no text", () => {
