@@ -11,7 +11,7 @@ export const TUTORIAL_STEPS: Step[] = [
     title: "Live Transcript",
     content:
       "Start transcribing to convert speech to text in real time. Detected Bible verses are highlighted automatically.",
-    placement: "right",
+    placement: "left",
   },
   {
     ...STEP_DEFAULTS,
@@ -51,10 +51,10 @@ export const TUTORIAL_STEPS: Step[] = [
   {
     ...STEP_DEFAULTS,
     target: '[data-slot="queue-panel"]',
-    title: "Verse Queue",
+    title: "Schedule",
     content:
-      "Your queued verses live here. Drag to reorder, click to present. Build your set list before going live.",
-    placement: "left",
+      "Your service schedule lives here. Drag to reorder, click to focus or present. Build your set list before going live.",
+    placement: "right",
   },
   {
     ...STEP_DEFAULTS,

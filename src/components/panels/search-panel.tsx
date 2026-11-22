@@ -117,7 +117,7 @@ function HighlightedText({ text, query }: { text: string; query: string }) {
 // select its verse nor clear a newer navigation's pending target.
 let navSeq = 0
 
-export function SearchPanel() {
+export function SearchPanel({ embedded = false }: { embedded?: boolean } = {}) {
   const [activeTab, setActiveTab] = useState<SearchTab>("book")
   const [selectedBook, setSelectedBook] = useState<Book | null>(null)
   const [chapter, setChapter] = useState(1)
@@ -561,7 +561,12 @@ export function SearchPanel() {
     <div
       ref={panelRef}
       data-slot="search-panel"
-      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card outline-none"
+      className={cn(
+        "flex min-h-0 flex-1 flex-col overflow-hidden outline-none",
+        embedded
+          ? "h-full w-full"
+          : "rounded-lg border border-border bg-card"
+      )}
       onKeyDown={activeTab === "book" ? handleKeyDown : undefined}
       tabIndex={-1}
     >

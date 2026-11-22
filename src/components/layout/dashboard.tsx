@@ -1,10 +1,10 @@
 import { TransportBar } from "@/components/controls/transport-bar"
-import { TranscriptPanel } from "@/components/panels/transcript-panel"
+import { QueuePanel } from "@/components/panels/queue-panel"
 import { PreviewPanel } from "@/components/panels/preview-panel"
 import { LiveOutputPanel } from "@/components/panels/live-output-panel"
-import { QueuePanel } from "@/components/panels/queue-panel"
-import { SearchPanel } from "@/components/panels/search-panel"
-import { SongsSearchPanel } from "@/components/panels/songs-search-panel"
+import { TranscriptPanel } from "@/components/panels/transcript-panel"
+import { BibleSongsPanel } from "@/components/panels/bible-songs-panel"
+import { SongWorkAreaPanel } from "@/components/panels/song-work-area-panel"
 import { DetectionsPanel } from "@/components/panels/detections-panel"
 import { EmbeddingWarningBanner } from "@/components/ui/embedding-warning-banner"
 import {
@@ -27,7 +27,7 @@ export function Dashboard() {
       {/* Main Resizable Workspace */}
       <div className="min-h-0 flex-1 p-2">
         <ResizablePanelGroup orientation="vertical" className="h-full w-full">
-          {/* Upper Section: 4 Panels */}
+          {/* Upper Section: 4 Panels (VideoPsalm layout: Schedule on left, Transcript on right) */}
           <ResizablePanel
             defaultSize="45%"
             minSize="20%"
@@ -42,7 +42,7 @@ export function Dashboard() {
                 minSize="14%"
                 className="flex h-full min-h-0 min-w-0 flex-1 flex-col p-1"
               >
-                <TranscriptPanel />
+                <QueuePanel />
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel
@@ -66,14 +66,14 @@ export function Dashboard() {
                 minSize="14%"
                 className="flex h-full min-h-0 min-w-0 flex-1 flex-col p-1"
               >
-                <QueuePanel />
+                <TranscriptPanel />
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
 
           <ResizableHandle withHandle orientation="horizontal" />
 
-          {/* Lower Section: 3 Panels */}
+          {/* Lower Section: 3 Panels (Combined Bible/Songs, Song Work Area, Detections) */}
           <ResizablePanel
             defaultSize="55%"
             minSize="20%"
@@ -88,7 +88,7 @@ export function Dashboard() {
                 minSize="20%"
                 className="flex h-full min-h-0 min-w-0 flex-1 flex-col p-1"
               >
-                <SearchPanel />
+                <BibleSongsPanel />
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel
@@ -96,7 +96,7 @@ export function Dashboard() {
                 minSize="20%"
                 className="flex h-full min-h-0 min-w-0 flex-1 flex-col p-1"
               >
-                <SongsSearchPanel />
+                <SongWorkAreaPanel />
               </ResizablePanel>
               <ResizableHandle withHandle />
               <ResizablePanel

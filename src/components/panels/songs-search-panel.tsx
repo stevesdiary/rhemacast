@@ -140,13 +140,19 @@ function SongRow({
   const [expanded, setExpanded] = useState(false)
   const [fullSong, setFullSong] = useState<SongWithSections | null>(null)
   const [loading, setLoading] = useState(false)
+  const selectedSongId = useSongsStore((s) => s.selectedSong?.song.id)
+  const isSelected = selectedSongId === song.id
 
-  const handleExpand = useCallback(async () => {
-    if (!expanded && !fullSong) {
+  const handleSelectSong = useCallback(async () => {
+    let data = fullSong
+    if (!data) {
       setLoading(true)
-      const data = await fetchSong(song.id).catch(() => null)
+      data = await fetchSong(song.id).catch(() => null)
       setFullSong(data)
       setLoading(false)
+    }
+    if (data) {
+      useSongsStore.getState().selectSong(data)
     }
     setExpanded((v) => !v)
   }, [expanded, fullSong, song.id])
@@ -206,10 +212,17 @@ function SongRow({
   )
 
   return (
-    <div className="rounded-lg border border-transparent transition-colors hover:border-border">
+    <div
+      className={cn(
+        "rounded-lg border transition-colors",
+        isSelected
+          ? "border-lime-500/40 bg-lime-500/10"
+          : "border-transparent hover:border-border hover:bg-muted/20"
+      )}
+    >
       <div
         className="group flex cursor-pointer items-center gap-2 px-3 py-2"
-        onClick={handleExpand}
+        onClick={handleSelectSong}
       >
         {expanded ? (
           <ChevronDownIcon className="size-3 shrink-0 text-muted-foreground" />
@@ -289,7 +302,7 @@ function SongRow({
   )
 }
 
-export function SongsSearchPanel() {
+export function SongsSearchPanel({ embedded = false }: { embedded?: boolean } = {}) {
   const [query, setQuery] = useState("")
   const [searchResults, setSearchResults] = useState<SearchSongRow[]>([])
   const [isSearching, setIsSearching] = useState(false)
@@ -344,7 +357,10 @@ export function SongsSearchPanel() {
   return (
     <div
       data-slot="songs-search-panel"
-      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card"
+      className={cn(
+        "flex min-h-0 flex-1 flex-col overflow-hidden",
+        embedded ? "h-full w-full" : "rounded-lg border border-border bg-card"
+      )}
     >
       {/* Header with single unified search input */}
       <div className="flex min-h-11 shrink-0 items-center gap-2 border-b border-border px-3 py-1.5">
